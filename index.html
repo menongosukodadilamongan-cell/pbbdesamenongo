@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APLIKASI PBB DESA MENONGO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .table-container { overflow-x: auto; }
+        .btn-lunas-action { @apply bg-rose-100 text-rose-500 hover:bg-rose-200 transition-colors p-2 rounded-lg; }
+        .btn-copy-action { @apply bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors p-2 rounded-lg; }
+        .btn-nop-action { @apply bg-blue-100 text-blue-500 hover:bg-blue-200 transition-colors p-2 rounded-lg; }
+        .badge-belum { @apply bg-rose-100 text-rose-600 px-2 py-1 rounded text-[9px] font-bold uppercase; }
+        .badge-lunas { @apply bg-emerald-100 text-emerald-600 px-2 py-1 rounded text-[9px] font-bold uppercase; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-10">
+
+    <div class="max-w-7xl mx-auto px-4 pt-8">
+        <!-- Header Sesuai Permintaan -->
+        <div class="flex items-center gap-4 mb-6 bg-blue-600 text-white p-6 rounded-2xl shadow-lg shadow-blue-200 relative overflow-hidden">
+            <i data-lucide="shield-check" class="w-12 h-12 relative z-10"></i>
+            <div class="relative z-10">
+                <h1 class="text-2xl md:text-3xl font-black uppercase leading-tight">APLIKASI PAJAK BUMI BANGUNAN DESA MENONGO</h1>
+                <p class="text-blue-100 text-base font-bold opacity-90 mt-1 uppercase tracking-wider">DADANG PURNOMO - SEKRETARIS DESA</p>
+            </div>
+            <div class="absolute -right-4 -top-4 w-32 h-32 bg-blue-500 rounded-full opacity-40"></div>
+        </div>
+
+        <div id="connectionStatus" class="mb-6 p-3 rounded-xl flex items-center gap-3 border bg-white border-slate-200 text-slate-500 shadow-sm">
+            <div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse" id="statusDot"></div>
+            <span class="text-xs font-medium" id="statusText">Menghubungkan ke Database Cloud...</span>
+        </div>
+
+        <div id="workspace" class="hidden opacity-0 transition-opacity duration-500">
+            <!-- Filter & Action -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="searchInput" oninput="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none flex-1 font-medium" placeholder="Cari Nama WP atau NOP...">
+                    <select id="statusSelect" onchange="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold">
+                        <option value="all">Semua Status</option>
+                        <option value="unpaid">Belum Terbayar</option>
+                        <option value="paid">Sudah Lunas</option>
+                    </select>
+                    <select id="viewModeSelect" onchange="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-black text-blue-600">
+                        <option value="nop">Tampilan NOP (Asli)</option>
+                        <option value="group">Tampilan Kelompok</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="copyFormatWA()" class="flex-1 bg-emerald-500 text-white font-black rounded-xl px-4 py-3 shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all uppercase text-xs">
+                        <i data-lucide="message-circle" class="w-5 h-5"></i> Format WA
+                    </button>
+                    <button onclick="downloadFilteredExcel()" class="flex-1 bg-teal-600 text-white font-black rounded-xl px-4 py-3 shadow-sm flex items-center justify-center gap-2 hover:bg-teal-700 transition-all uppercase text-xs">
+                        <i data-lucide="download" class="w-5 h-5"></i> Download .xlsx
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Total Objek Pajak</p>
+                    <div id="summaryCount" class="text-2xl font-black">0</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-rose-500">
+                    <p class="text-[10px] text-rose-400 font-bold uppercase mb-1">Tagihan Belum Terbayar</p>
+                    <div id="summaryUnpaid" class="text-2xl font-black text-rose-600">Rp 0</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-emerald-500">
+                    <p class="text-[10px] text-emerald-400 font-bold uppercase mb-1">Tagihan Sudah Lunas</p>
+                    <div id="summaryPaid" class="text-2xl font-black text-emerald-600">Rp 0</div>
+                </div>
+            </div>
+
+            <!-- Main Table Container -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden relative">
+                <div class="table-container max-h-[650px] overflow-y-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 border-b border-slate-100 font-black">
+                            <tr id="tableHeaderRow"></tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Upload (Hanya tampil jika Cloud kosong) -->
+        <div id="uploadSection" class="hidden bg-white p-12 rounded-3xl shadow-xl border border-slate-200 text-center animate-in">
+            <i data-lucide="file-up" class="w-20 h-20 text-blue-100 mx-auto mb-6"></i>
+            <h2 class="text-2xl font-black mb-2">Unggah Data Master</h2>
+            <p class="text-slate-500 text-sm mb-8 max-w-sm mx-auto">Silakan pilih file Excel PBB Desa untuk memulai sinkronisasi online.</p>
+            <label for="fileInput" class="inline-flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-10 rounded-2xl cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95 uppercase tracking-widest text-xs">
+                <i data-lucide="upload" class="w-5 h-5"></i> Pilih File Excel
+                <input id="fileInput" type="file" class="hidden" accept=".xlsx, .xls" onchange="handleFileUpload(event)" />
+            </label>
+        </div>
+    </div>
+
+    <!-- Selection Bar -->
+    <div id="selectionBar" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 z-40 translate-y-32 opacity-0 transition-all duration-500 pointer-events-none border border-slate-700">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-sm font-black ring-4 ring-blue-900/30" id="selectionCount">0</div>
+            <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">NOP Terpilih</span>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="openGroupModal()" class="bg-white text-slate-900 font-black py-2.5 px-6 rounded-xl text-[10px] uppercase hover:bg-slate-100 transition-all">Gabung Kelompok</button>
+            <button onclick="copySelectedWA()" class="bg-emerald-500 text-white font-black py-2.5 px-6 rounded-xl text-[10px] uppercase hover:bg-emerald-600 transition-all">Kirim WA</button>
+        </div>
+        <button onclick="clearSelection()" class="text-slate-500 hover:text-white transition-colors">
+            <i data-lucide="x-circle" class="w-7 h-7"></i>
+        </button>
+    </div>
+
+    <!-- Modal Group Name -->
+    <div id="groupModal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-white rounded-3xl p-10 w-full max-w-md shadow-2xl animate-in">
+            <h3 class="font-black text-2xl mb-2 text-slate-800 tracking-tight">Nama Penanggung Jawab</h3>
+            <p class="text-xs text-slate-400 mb-8 font-medium">Data yang dipilih akan digabungkan ke bawah nama kelompok ini.</p>
+            
+            <input type="text" id="groupNameInput" class="w-full border-2 border-slate-100 p-5 rounded-2xl mb-8 outline-none font-bold shadow-inner focus:border-blue-500 transition-all" placeholder="Ketik nama kelompok/penanggung jawab...">
+            
+            <div class="flex gap-4">
+                <button onclick="closeGroupModal()" class="flex-1 font-bold text-slate-400 py-4 hover:bg-slate-50 rounded-2xl transition-all">BATAL</button>
+                <button onclick="confirmGroup()" class="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all">SIMPAN DATA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-6 py-5 rounded-2xl shadow-2xl z-50 flex items-center gap-4 border border-slate-700">
+        <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+            <i data-lucide="check" class="w-5 h-5 text-white"></i>
+        </div>
+        <span id="toastMessage" class="text-sm font-black tracking-wide uppercase"></span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.lucide.createIcons();
+        window.globalData = [];
+        window.filteredData = [];
+        window.selectedNops = new Set();
+        window.expandedGroups = new Set();
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBxm751vU2Tu4iVlG0b8ASd-YWwKAN3Rro",
+          authDomain: "pbbtajidsekdesmenongo.firebaseapp.com",
+          projectId: "pbbtajidsekdesmenongo",
+          storageBucket: "pbbtajidsekdesmenongo.firebasestorage.app",
+          messagingSenderId: "891257967379",
+          appId: "1:891257967379:web:311fb8d3326ddcfcc080e6"
+        };
+        const appId = "pbbtajidsekdesmenongo";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('statusDot').className = "w-2 h-2 rounded-full bg-emerald-500";
+                document.getElementById('statusText').innerHTML = `<span class="text-emerald-600 font-black uppercase tracking-widest text-[10px]">Cloud Aktif</span>`;
+                setupRealtimeListener();
+            }
+        });
+
+        function setupRealtimeListener() {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists() && docSnap.data().excelData) {
+                    const data = docSnap.data();
+                    let state = data.modifiedState ? JSON.parse(data.modifiedState) : {};
+                    window.globalData = JSON.parse(data.excelData);
+                    window.globalData.forEach(row => {
+                        const savedRow = state[row['NOP']];
+                        row.isPaid = savedRow?.isPaid || false;
+                        row.manualGroupName = savedRow?.groupName || null;
+                        row.paidDate = savedRow?.paidDate || "";
+                    });
+                    document.getElementById('uploadSection').classList.add('hidden');
+                    document.getElementById('workspace').classList.remove('hidden');
+                    document.getElementById('workspace').classList.remove('opacity-0');
+                    window.filterAndSortData();
+                } else {
+                    document.getElementById('uploadSection').classList.remove('hidden');
+                }
+            });
+        }
+
+        window.saveState = async () => {
+            const state = {};
+            window.globalData.forEach(row => {
+                if (row.isPaid || row.manualGroupName) {
+                    state[row['NOP']] = { isPaid: row.isPaid, groupName: row.manualGroupName, paidDate: row.paidDate || "" };
+                }
+            });
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
+            await setDoc(docRef, { modifiedState: JSON.stringify(state) }, { merge: true });
+        };
+
+        window.handleFileUpload = async (event) => {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                let jsonData = XLSX.utils.sheet_to_json(worksheet, { range: 2, defval: "" });
+                let cleanedData = jsonData.filter(row => row['NAMA WP'] && row['NOP']);
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
+                await setDoc(docRef, { excelData: JSON.stringify(cleanedData), modifiedState: "{}" });
+                window.showToast("DATA MASTER BERHASIL DIUNGGAH");
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        window.filterAndSortData = () => {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const s = document.getElementById('statusSelect').value;
+            window.filteredData = window.globalData.filter(r => {
+                const matchQ = q === '' || (r['NAMA WP']||'').toString().toLowerCase().includes(q) || (r['NOP']||'').toString().toLowerCase().includes(q);
+                let matchS = s === 'all' || (s === 'paid' ? r.isPaid : !r.isPaid);
+                return matchQ && matchS;
+            });
+            window.renderTable();
+        };
+
+        window.renderTable = () => {
+            const b = document.getElementById('tableBody');
+            const h = document.getElementById('tableHeaderRow');
+            const mode = document.getElementById('viewModeSelect').value;
+            b.innerHTML = '';
+            let unp = 0, paid = 0;
+
+            if(mode === 'group') {
+                h.innerHTML = `<th class="p-4 px-6">NO</th><th class="p-4 px-6">NAMA KELOMPOK (WP)</th><th class="p-4 px-6 text-center">JML NOP</th><th class="p-4 px-6 text-center">STATUS</th><th class="p-4 px-6 text-right">TAGIHAN</th><th class="p-4 px-6 text-center">AKSI</th>`;
+                const groups = {};
+                window.filteredData.forEach(r => {
+                    if(r.manualGroupName) {
+                        if(!groups[r.manualGroupName]) groups[r.manualGroupName] = { nama: r.manualGroupName, rows: [], total: 0, lunas: true };
+                        groups[r.manualGroupName].rows.push(r);
+                        groups[r.manualGroupName].total += parseInt(r['TOTAL']||0);
+                        if(!r.isPaid) groups[r.manualGroupName].lunas = false;
+                    }
+                });
+
+                const groupList = Object.values(groups).sort((x,y)=>x.nama.localeCompare(y.nama));
+                groupList.forEach((g, i) => {
+                    if(g.lunas) paid += g.total; else unp += g.total;
+                    const isExp = window.expandedGroups.has(g.nama);
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-50/50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 px-6 text-slate-300 font-black">${i+1}</td>
+                        <td class="p-4 px-6 font-black text-blue-700 tracking-tight uppercase">${g.nama}</td>
+                        <td class="p-4 px-6 text-center text-slate-400 font-mono text-[10px]">${g.rows.length} NOP</td>
+                        <td class="p-4 px-6 text-center"><span class="${g.lunas?'badge-lunas':'badge-belum'}">${g.lunas?'LUNAS SEMUA':'BELUM TERBAYAR'}</span></td>
+                        <td class="p-4 px-6 text-right font-black text-slate-700">${window.formatRupiah(g.total)}</td>
+                        <td class="p-4 px-6 text-center">
+                            <div class="flex gap-2 justify-center">
+                                <button onclick="togglePaidGroup('${g.nama.replace(/'/g, "\\'")}')" class="btn-lunas-action" title="Tanda Lunas"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
+                                <button onclick="copyGroupWA('${g.nama.replace(/'/g, "\\'")}')" class="bg-emerald-100 text-emerald-600 p-2 rounded-lg hover:bg-emerald-200" title="WA Kelompok"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
+                                <button onclick="copyGroupExcelFull('${g.nama.replace(/'/g, "\\'")}')" class="btn-copy-action" title="Copy 9 Kolom Excel"><i data-lucide="table-2" class="w-4 h-4"></i></button>
+                                <button onclick="toggleExpand('${g.nama.replace(/'/g, "\\'")}')" class="bg-slate-100 text-slate-500 p-2 rounded-lg hover:bg-slate-200"><i data-lucide="${isExp?'chevron-up':'chevron-down'}" class="w-4 h-4"></i></button>
+                            </div>
+                        </td>`;
+                    b.appendChild(tr);
+
+                    if(isExp) {
+                        const detailTr = document.createElement('tr');
+                        detailTr.className = "bg-slate-50 border-b border-slate-200";
+                        let detailHtml = `<td colspan="6" class="p-4"><div class="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-inner"><table class="w-full text-xs text-left">
+                            <thead class="bg-slate-50 text-[9px] text-slate-400 font-black uppercase"><tr><th class="p-3 px-4">NOP</th><th class="p-3">NAMA (ASLI)</th><th class="p-3 text-right">TAGIHAN</th><th class="p-3 text-center">STATUS</th><th class="p-3 text-center">TGL LUNAS</th><th class="p-3 text-center">AKSI</th></tr></thead><tbody>`;
+                        g.rows.forEach(r => {
+                            detailHtml += `<tr class="border-t border-slate-100 hover:bg-slate-50 transition-colors">
+                                <td class="p-3 px-4 font-mono text-[9px] text-slate-500">${r['NOP']}</td>
+                                <td class="p-3 font-bold text-slate-600 uppercase">${r['NAMA WP']}</td>
+                                <td class="p-3 text-right font-black text-slate-700">${window.formatRupiah(parseInt(r['TOTAL']||0))}</td>
+                                <td class="p-3 text-center"><span class="${r.isPaid?'text-emerald-500':'text-rose-500'} font-black text-[9px] uppercase">${r.isPaid?'LUNAS':'BELUM TERBAYAR'}</span></td>
+                                <td class="p-3 text-center text-[9px] text-slate-400 font-medium">${r.paidDate || '-'}</td>
+                                <td class="p-3 text-center">
+                                    <div class="flex gap-3 justify-center items-center">
+                                        <button onclick="togglePaidRow('${r['NOP']}')" class="text-blue-600 font-black text-[10px] uppercase underline hover:text-blue-800">Ubah</button>
+                                        <button onclick="removeFromGroup('${r['NOP']}')" class="text-rose-500 font-black text-[10px] uppercase underline hover:text-rose-700">Keluarkan</button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        });
+                        detailHtml += `</tbody></table></div></td>`;
+                        detailTr.innerHTML = detailHtml;
+                        b.appendChild(detailTr);
+                    }
+                });
+                document.getElementById('summaryCount').innerText = groupList.length + " Kelompok";
+            } else {
+                h.innerHTML = `<th class="p-4 px-6 w-10"></th><th class="p-4 px-6">NOP</th><th class="p-4 px-6">NAMA WP (ASLI)</th><th class="p-4 px-6">TGL LUNAS</th><th class="p-4 px-6 text-center text-[9px]">STATUS</th><th class="p-4 px-6 text-right">TAGIHAN</th><th class="p-4 px-6 text-center">AKSI</th>`;
+                window.filteredData.forEach((r, i) => {
+                    const tag = parseInt(r['TOTAL']||0);
+                    if(r.isPaid) paid += tag; else unp += tag;
+                    const tr = document.createElement('tr');
+                    const isSelected = window.selectedNops.has(r['NOP']);
+                    tr.className = isSelected ? "bg-blue-50/70" : "hover:bg-slate-50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 px-6 text-center"><input type="checkbox" onchange="toggleSelectNOP('${r['NOP']}')" ${isSelected?'checked':''} class="w-5 h-5 rounded-lg text-blue-600 border-slate-300 focus:ring-blue-500"></td>
+                        <td class="p-4 px-6 font-mono text-[10px] text-slate-500">${r['NOP']}</td>
+                        <td class="p-4 px-6">
+                            <div class="font-black text-slate-700 uppercase tracking-tight">${r['NAMA WP']}</div>
+                            ${r.manualGroupName?`<span class='text-[8px] bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase font-black mt-1 inline-block'>${r.manualGroupName}</span>`:''}
+                        </td>
+                        <td class="p-4 px-6 text-[9px] text-slate-400 font-bold">${r.paidDate || '-'}</td>
+                        <td class="p-4 px-6 text-center"><span class="${r.isPaid?'badge-lunas':'badge-belum'}">${r.isPaid ? 'LUNAS' : 'BELUM TERBAYAR'}</span></td>
+                        <td class="p-4 px-6 text-right font-black ${r.isPaid?'line-through opacity-20':'text-slate-700'}">${window.formatRupiah(tag)}</td>
+                        <td class="p-4 px-6 text-center">
+                            <div class="flex gap-2 justify-center">
+                                <button onclick="togglePaidRow('${r['NOP']}')" class="btn-lunas-action" title="Ubah Status"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
+                                <button onclick="copyFullExcelRow('${r['NOP']}')" class="btn-copy-action" title="Salin 9 Kolom Excel"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                <button onclick="copyNopContent('${r['NOP']}')" class="btn-nop-action" title="Salin NOP"><i data-lucide="tag" class="w-4 h-4"></i></button>
+                            </div>
+                        </td>`;
+                    b.appendChild(tr);
+                });
+                document.getElementById('summaryCount').innerText = window.filteredData.length + " NOP";
+            }
+            document.getElementById('summaryUnpaid').innerText = window.formatRupiah(unp);
+            document.getElementById('summaryPaid').innerText = window.formatRupiah(paid);
+            window.lucide.createIcons();
+        };
+
+        // --- MANAJEMEN PEMBAYARAN ---
+        window.togglePaidRow = (nop) => { 
+            const r = window.globalData.find(x => x['NOP']===nop); 
+            if(r) { 
+                r.isPaid = !r.isPaid; 
+                r.paidDate = r.isPaid ? new Date().toLocaleString('id-ID') : "";
+                window.saveState(); 
+            } 
+        };
+
+        window.togglePaidGroup = (nama) => { 
+            const rows = window.globalData.filter(r => r.manualGroupName === nama);
+            const allPaid = rows.every(r => r.isPaid);
+            const now = new Date().toLocaleString('id-ID');
+            rows.forEach(r => {
+                r.isPaid = !allPaid;
+                r.paidDate = r.isPaid ? now : "";
+            });
+            window.saveState(); 
+        };
+
+        // --- FITUR SALIN 9 KOLOM (NO, NOP, TAHUN, TAGIHAN, DENDA, TOTAL, NAMA WP, LETAK OP, KET) ---
+        window.copyFullExcelRow = async (nop) => {
+            const r = window.globalData.find(x => x['NOP'] === nop);
+            if(!r) return;
+            const ket = r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR";
+            const rowStr = `${r['NO']||''}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${r['TOTAL']||''}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
+            await window.copyText(rowStr, `BARIS NOP ${nop} BERHASIL DISALIN SESUAI FORMAT EXCEL!`);
+        };
+
+        window.copyGroupExcelFull = async (groupName) => {
+            const rows = window.globalData.filter(r => r.manualGroupName === groupName);
+            const headers = "NO\tNOP\tTAHUN\tTAGIHAN\tDENDA\tTOTAL\tNAMA WP\tLETAK OP\tKETERANGAN";
+            const content = rows.map(r => {
+                const ket = r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR";
+                return `${r['NO']||''}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${r['TOTAL']||''}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
+            }).join('\n');
+            await window.copyText(`${headers}\n${content}`, `SELURUH KELOMPOK ${groupName} DISALIN KE FORMAT EXCEL (9 KOLOM)!`);
+        };
+
+        window.copyNopContent = (nop) => window.copyText(nop, `NOP ${nop} BERHASIL DISALIN!`);
+
+        // --- WHATSAPP LOGIC ---
+        window.copyGroupWA = async (groupName) => {
+            const data = window.globalData.filter(r => r.manualGroupName === groupName);
+            formatAndCopyWA(data, `Nama Kelompok: *${groupName}*`);
+        };
+
+        window.copySelectedWA = async () => {
+            if(window.selectedNops.size === 0) return alert("PILIH NOP TERLEBIH DAHULU!");
+            const rows = window.globalData.filter(r => window.selectedNops.has(r['NOP']));
+            formatAndCopyWA(rows, `*DAFTAR NOP PILIHAN*`);
+        };
+
+        window.copyFormatWA = async () => {
+            if(window.filteredData.length === 0) return alert("PENCARIAN KOSONG!");
+            formatAndCopyWA(window.filteredData.slice(0, 50), `*RINGKASAN TAGIHAN PBB*`);
+        };
+
+        function formatAndCopyWA(data, headerTitle) {
+            let total = 0;
+            let text = `*INFO TAGIHAN PBB DESA MENONGO*\n${headerTitle}\n--------------------------\n`;
+            data.forEach((r, i) => {
+                const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                total += tag;
+                const ket = r.isPaid ? 'LUNAS ✅' : 'BELUM TERBAYAR ❌';
+                text += `${i+1}. *${r['NAMA WP']}*\n   NOP: \`${r['NOP']}\`\n   Status: _${ket}_\n   Tagihan: *${window.formatRupiah(tag)}*\n\n`;
+            });
+            text += `--------------------------\n*TOTAL TAGIHAN: ${window.formatRupiah(total)}*\n--------------------------\n_Silakan lakukan pembayaran melalui petugas desa._\n\n*DADANG PURNOMO - SEKRETARIS DESA*`;
+            window.copyText(text, "FORMAT WHATSAPP BERHASIL DISALIN!");
+        }
+
+        // --- CORE UTILS ---
+        window.downloadFilteredExcel = () => {
+            if(window.filteredData.length === 0) return alert("TIDAK ADA DATA!");
+            const exportData = window.filteredData.map(r => ({
+                NO: r['NO'], NOP: r['NOP'], TAHUN: r['TAHUN'], TAGIHAN: r['TAGIHAN'], DENDA: r['DENDA'], TOTAL: r['TOTAL'], 'NAMA WP': r['NAMA WP'], 'LETAK OP': r['LETAK OP'] || r['LETAK OBJEK PAJAK'],
+                'STATUS': r.isPaid ? "LUNAS" : "BELUM TERBAYAR", 'TGL LUNAS': r.paidDate || "-"
+            }));
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Laporan PBB");
+            XLSX.writeFile(wb, `LAPORAN_PBB_MENONGO_${new Date().toISOString().slice(0,10)}.xlsx`);
+        };
+
+        window.copyText = async (text, msg) => {
+            try {
+                await navigator.clipboard.writeText(text);
+                window.showToast(msg);
+            } catch (err) {
+                const el = document.createElement('textarea');
+                el.value = text; document.body.appendChild(el);
+                el.select(); document.execCommand('copy');
+                document.body.removeChild(el);
+                window.showToast(msg);
+            }
+        };
+
+        window.toggleExpand = (name) => { if(window.expandedGroups.has(name)) window.expandedGroups.delete(name); else window.expandedGroups.add(name); window.renderTable(); };
+        window.removeFromGroup = (nop) => { if(confirm("KELUARKAN NOP INI DARI KELOMPOK?")) { const r = window.globalData.find(x => x['NOP']===nop); r.manualGroupName = null; window.saveState(); } };
+        window.toggleSelectNOP = (nop) => { if(window.selectedNops.has(nop)) window.selectedNops.delete(nop); else window.selectedNops.add(nop); window.updateSelectionUI(); window.renderTable(); };
+        window.updateSelectionUI = () => { const bar = document.getElementById('selectionBar'); document.getElementById('selectionCount').innerText = window.selectedNops.size; if(window.selectedNops.size > 0) bar.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none'); else bar.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none'); };
+        window.clearSelection = () => { window.selectedNops.clear(); window.updateSelectionUI(); window.renderTable(); };
+        window.openGroupModal = () => document.getElementById('groupModal').classList.remove('hidden');
+        window.closeGroupModal = () => document.getElementById('groupModal').classList.add('hidden');
+        window.confirmGroup = () => { const n = document.getElementById('groupNameInput').value; if(!n) return; window.globalData.forEach(r => { if(window.selectedNops.has(r['NOP'])) r.manualGroupName = n; }); window.saveState(); window.closeGroupModal(); window.clearSelection(); };
+        window.formatRupiah = (a) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(a || 0);
+        window.showToast = (m) => { const t = document.getElementById('toast'); document.getElementById('toastMessage').innerText = m; t.classList.remove('translate-y-20', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 3000); };
+
+        window.lucide.createIcons();
+    </script>
+</body>
+</html>
