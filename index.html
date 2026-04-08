@@ -56,9 +56,10 @@
         </div>
 
         <div id="workspace" class="hidden opacity-0 transition-opacity duration-500">
+            <!-- Filter & Action -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 <div class="flex flex-col sm:flex-row gap-2">
-                    <input type="text" id="searchInput" oninput="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none flex-1 font-medium" placeholder="Cari Nama WP atau NOP...">
+                    <input type="text" id="searchInput" oninput="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none flex-1 font-medium" placeholder="Cari Nama, NOP, atau Kelompok...">
                     <select id="statusSelect" onchange="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold">
                         <option value="all">Semua Status</option>
                         <option value="unpaid">Belum Terbayar</option>
@@ -380,7 +381,10 @@
             const q = document.getElementById('searchInput').value.toLowerCase();
             const s = document.getElementById('statusSelect').value;
             window.filteredData = window.globalData.filter(r => {
-                const matchQ = q === '' || String(r['NAMA WP']||'').toLowerCase().includes(q) || String(r['NOP']||'').toLowerCase().includes(q);
+                const matchQ = q === '' || 
+                               String(r['NAMA WP']||'').toLowerCase().includes(q) || 
+                               String(r['NOP']||'').toLowerCase().includes(q) ||
+                               String(r.manualGroupName||'').toLowerCase().includes(q);
                 let matchS = s === 'all' || (s === 'paid' ? r.isPaid : !r.isPaid);
                 return matchQ && matchS;
             });
