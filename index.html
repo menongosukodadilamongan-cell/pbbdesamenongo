@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APLIKASI PBB DESA MENONGO</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .table-container { overflow-x: auto; }
@@ -22,6 +25,7 @@
 <body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-10">
 
     <div class="max-w-7xl mx-auto px-4 pt-8">
+        <!-- Header Identitas Pak Dadang -->
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 bg-blue-600 text-white p-6 rounded-2xl shadow-lg shadow-blue-200 relative overflow-hidden gap-4">
             <div class="flex items-center gap-4 relative z-10">
                 <i data-lucide="shield-check" class="w-12 h-12"></i>
@@ -31,20 +35,30 @@
                 </div>
             </div>
             
+            <!-- Pilihan Tahun Pajak & Tombol Kelola Arsip -->
             <div class="relative z-10 flex items-center gap-2 bg-white/20 p-2.5 rounded-xl backdrop-blur-md border border-white/30 w-full md:w-auto justify-between md:justify-start">
                 <div class="flex items-center gap-2">
                     <i data-lucide="calendar-days" class="w-5 h-5 text-blue-100"></i>
                     <span class="text-xs text-blue-100 font-bold uppercase tracking-wider">Tahun Pajak:</span>
                     <select id="yearSelect" onchange="changeYear()" class="bg-transparent text-white font-black text-base outline-none cursor-pointer border-b-2 border-white/50 pb-0.5">
-                        </select>
+                        <!-- Dimuat otomatis via JS -->
+                    </select>
                 </div>
-                <button onclick="addYear()" class="bg-blue-500 hover:bg-blue-400 text-white p-2 rounded-lg transition-colors shadow-sm ml-2" title="Buka Arsip Tahun Baru">
-                    <i data-lucide="folder-plus" class="w-4 h-4"></i>
-                </button>
+                <div class="flex items-center ml-2">
+                    <!-- Tombol Tambah Tahun -->
+                    <button onclick="addYear()" class="bg-blue-500 hover:bg-blue-400 text-white p-2 rounded-lg transition-colors shadow-sm" title="Buka Arsip Tahun Baru">
+                        <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                    </button>
+                    <!-- Tombol Hapus Tahun (Bersih Memori) -->
+                    <button onclick="deleteCurrentYear()" class="bg-rose-500 hover:bg-rose-400 text-white p-2 rounded-lg transition-colors shadow-sm ml-1" title="Hapus Arsip Tahun Ini (Bersihkan Memori)">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
             </div>
             <div class="absolute -right-4 -top-4 w-32 h-32 bg-blue-500 rounded-full opacity-40"></div>
         </div>
 
+        <!-- Status Koneksi & Tombol Paksa Muat Ulang -->
         <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
             <div id="connectionStatus" class="p-3 rounded-xl flex items-center gap-3 border bg-white border-slate-200 text-slate-500 shadow-sm flex-1 w-full transition-colors">
                 <div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse" id="statusDot"></div>
@@ -80,6 +94,7 @@
                 </div>
             </div>
 
+            <!-- Stats Dashboard -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-center sm:text-left">
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                     <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Total Objek Pajak</p>
@@ -95,6 +110,7 @@
                 </div>
             </div>
 
+            <!-- Tabel Utama dengan Paginasi -->
             <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden relative">
                 <div class="table-container max-h-[650px] overflow-y-auto">
                     <table class="w-full text-sm text-left">
@@ -104,20 +120,42 @@
                         <tbody id="tableBody" class="divide-y divide-slate-50"></tbody>
                     </table>
                 </div>
+
+                <!-- Bar Paginasi -->
+                <div id="paginationContainer" class="p-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50">
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
+                        <span>Tampilkan:</span>
+                        <select id="itemsPerPageSelect" onchange="changeItemsPerPage()" class="bg-white border border-slate-200 rounded-lg p-1.5 outline-none focus:ring-2 focus:ring-blue-500 font-black cursor-pointer text-slate-700">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                            <option value="all">Semua</option>
+                        </select>
+                        <span>Data</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btnPrevPage" onclick="changePage(-1)" class="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-600"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                        <span id="pageInfo" class="text-xs font-black text-slate-600 px-3 uppercase tracking-wider">Hal 1 / 1</span>
+                        <button id="btnNextPage" onclick="changePage(1)" class="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-600"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- Section Upload (Hanya tampil jika Arsip Tahun tsb kosong) -->
         <div id="uploadSection" class="hidden bg-white p-12 rounded-3xl shadow-xl border border-slate-200 text-center animate-in">
             <i data-lucide="folder-open" class="w-20 h-20 text-blue-200 mx-auto mb-6"></i>
             <h2 class="text-2xl font-black mb-2 tracking-tight text-slate-800 uppercase">Arsip <span id="uploadYearText" class="text-blue-600"></span> Kosong</h2>
-            <p class="text-slate-500 text-sm mb-8 max-w-sm mx-auto">Unggah file Excel PBB untuk tahun ini. Data kelompok dari tahun sebelumnya akan otomatis disesuaikan!</p>
+            <p class="text-slate-500 text-sm mb-8 max-w-sm mx-auto">Unggah file Excel PBB untuk tahun ini. Data kelompok dan lunas dari sistem akan otomatis disesuaikan (Pembaruan Cerdas)!</p>
             <label for="fileInput" class="inline-flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-10 rounded-2xl cursor-pointer shadow-xl transition-all hover:scale-105 active:scale-95 uppercase tracking-widest text-xs">
-                <i data-lucide="upload" class="w-5 h-5"></i> Unggah File Excel
+                <i data-lucide="upload" class="w-5 h-5"></i> Unggah / Update Excel
                 <input id="fileInput" type="file" class="hidden" accept=".xlsx, .xls" onchange="handleFileUpload(event)" />
             </label>
         </div>
     </div>
 
+    <!-- Bar Pilihan -->
     <div id="selectionBar" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 z-40 translate-y-32 opacity-0 transition-all duration-500 pointer-events-none border border-slate-700">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-sm font-black ring-4 ring-blue-900/30" id="selectionCount">0</div>
@@ -133,6 +171,7 @@
         </button>
     </div>
 
+    <!-- Modal Kelompok -->
     <div id="groupModal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-white rounded-3xl p-10 w-full max-w-md shadow-2xl animate-in text-center">
             <h3 class="font-black text-2xl mb-2 text-slate-800 tracking-tight uppercase">Kelompok WP</h3>
@@ -145,6 +184,7 @@
         </div>
     </div>
 
+    <!-- Modal Edit Nama Kelompok -->
     <div id="editGroupModal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-white rounded-3xl p-10 w-full max-w-md shadow-2xl animate-in text-center">
             <h3 class="font-black text-2xl mb-2 text-slate-800 tracking-tight uppercase">Ganti Nama Kelompok</h3>
@@ -157,6 +197,7 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-6 py-5 rounded-2xl shadow-2xl z-50 flex items-center gap-4 border border-slate-700">
         <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
             <i data-lucide="check" class="w-4 h-4 text-white"></i>
@@ -179,6 +220,10 @@
         window.availableYears = [window.currentYear];
         window.globalGroupMap = {}; 
         window.rawCloudData = {};
+        
+        // Paginasi
+        window.currentPage = 1;
+        window.itemsPerPage = 50;
 
         const firebaseConfig = {
           apiKey: "AIzaSyBxm751vU2Tu4iVlG0b8ASd-YWwKAN3Rro",
@@ -195,7 +240,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- PERBAIKAN: LOGIN OTOMATIS UNTUK HP/PERANGKAT BARU ---
         signInAnonymously(auth).catch((error) => {
             document.getElementById('statusDot').className = "w-2 h-2 rounded-full bg-rose-500";
             document.getElementById('statusText').innerHTML = `<span class="text-rose-600 font-bold text-[10px] uppercase">Gagal Akses: Pastikan Domain Netlify Diizinkan di Firebase</span>`;
@@ -285,16 +329,15 @@
                     row.manualGroupName = window.globalGroupMap[nop] || null;
                 });
                 document.getElementById('uploadSection').classList.add('hidden');
-                const workspace = document.getElementById('workspace');
-                workspace.classList.remove('hidden');
-                workspace.classList.remove('opacity-0');
+                document.getElementById('workspace').classList.remove('hidden');
+                document.getElementById('workspace').classList.remove('opacity-0');
                 updateGroupSuggestions();
                 window.filterAndSortData();
             } else {
                 window.globalData = [];
                 window.filteredData = [];
-                document.getElementById('uploadSection').classList.remove('hidden');
                 document.getElementById('workspace').classList.add('hidden');
+                document.getElementById('uploadSection').classList.remove('hidden');
                 document.getElementById('uploadYearText').innerText = "Tahun " + window.currentYear;
             }
         };
@@ -308,6 +351,7 @@
 
         window.changeYear = () => {
             window.currentYear = document.getElementById('yearSelect').value;
+            window.currentPage = 1;
             window.clearSelection();
             renderFromCloudData();
         };
@@ -321,9 +365,45 @@
                     setDoc(docRef, { years: window.availableYears }, {merge: true});
                 }
                 window.currentYear = newY;
+                window.currentPage = 1;
                 renderFromCloudData();
             } else if (newY) {
                 alert("Format tahun tidak valid!");
+            }
+        };
+
+        window.deleteCurrentYear = async () => {
+            if(window.availableYears.length <= 1) {
+                alert("Tidak bisa menghapus! Harus tersisa minimal 1 Arsip Tahun.");
+                return;
+            }
+            
+            const confirmDelete = confirm(`PERINGATAN!\n\nYakin ingin menghapus PERMANEN seluruh data PBB Tahun ${window.currentYear}?\n(Tindakan ini akan mengosongkan memori Cloud Anda. Data yang dihapus tidak bisa dikembalikan).`);
+            if(!confirmDelete) return;
+
+            const statusText = document.getElementById('statusText');
+            statusText.innerHTML = `<span class="text-blue-600 font-bold text-[10px] uppercase">Menghapus Arsip...</span>`;
+
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
+            const payload = {};
+            
+            payload[`excelData_${window.currentYear}`] = deleteField();
+            payload[`modifiedState_${window.currentYear}`] = deleteField();
+            
+            const newYears = window.availableYears.filter(y => y !== window.currentYear);
+            payload['years'] = newYears;
+
+            try {
+                await setDoc(docRef, payload, { merge: true });
+                window.showToast(`ARSIP TAHUN ${window.currentYear} DIHAPUS`);
+                window.availableYears = newYears;
+                window.currentYear = newYears[0];
+                window.currentPage = 1;
+                renderFromCloudData();
+                statusText.innerHTML = `<span class="text-emerald-600 font-black uppercase text-[10px]">Cloud Tersambung</span>`;
+            } catch(e) {
+                console.error("Gagal Hapus:", e);
+                alert("Gagal menghapus arsip dari server.");
             }
         };
 
@@ -369,10 +449,18 @@
                 let cleanedData = jsonData.filter(row => row['NAMA WP'] && row['NOP']);
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
                 const payload = {};
+                
+                const existingState = window.rawCloudData[`modifiedState_${window.currentYear}`];
+                
                 payload[`excelData_${window.currentYear}`] = JSON.stringify(cleanedData);
-                payload[`modifiedState_${window.currentYear}`] = "{}";
+                if(!existingState) {
+                    payload[`modifiedState_${window.currentYear}`] = "{}";
+                }
+
                 await setDoc(docRef, payload, { merge: true });
-                window.showToast(`DATA TAHUN ${window.currentYear} BERHASIL DIUNGGAH`);
+                window.showToast(`DATA TAHUN ${window.currentYear} BERHASIL DIPERBARUI`);
+                
+                document.getElementById('fileInput').value = ""; 
             };
             reader.readAsArrayBuffer(file);
         };
@@ -388,6 +476,19 @@
                 let matchS = s === 'all' || (s === 'paid' ? r.isPaid : !r.isPaid);
                 return matchQ && matchS;
             });
+            window.currentPage = 1; 
+            window.renderTable();
+        };
+
+        window.changeItemsPerPage = () => {
+            const val = document.getElementById('itemsPerPageSelect').value;
+            window.itemsPerPage = val === 'all' ? 999999 : parseInt(val);
+            window.currentPage = 1;
+            window.renderTable();
+        };
+
+        window.changePage = (delta) => {
+            window.currentPage += delta;
             window.renderTable();
         };
 
@@ -397,6 +498,9 @@
             const mode = document.getElementById('viewModeSelect').value;
             b.innerHTML = '';
             let unp = 0, paid = 0;
+            
+            let dataToRender = [];
+            let totalItems = 0;
 
             if(mode === 'group') {
                 h.innerHTML = `<th class="p-4 px-6">NO</th><th class="p-4 px-6">KELOMPOK (WP)</th><th class="p-4 px-6 text-center">JML NOP</th><th class="p-4 px-6 text-center text-[9px]">STATUS TAHUN ${window.currentYear}</th><th class="p-4 px-6 text-right">TAGIHAN</th><th class="p-4 px-6 text-center">AKSI</th>`;
@@ -412,28 +516,66 @@
                 });
 
                 const groupList = Object.values(groups).sort((x,y)=>x.nama.localeCompare(y.nama));
-                groupList.forEach((g, i) => {
-                    let badgeHtml = "";
-                    let gLunasAll = false;
+                
+                groupList.forEach(g => {
                     if(g.lunasCount > 0 && g.belumCount > 0) {
-                        badgeHtml = `<span class="badge-sebagian">SEBAGIAN LUNAS</span>`;
                         let tagLunas = g.rows.filter(x=>x.isPaid).reduce((a,b)=>a+parseInt(b['TOTAL']||b['TAGIHAN']||0),0);
                         let tagBelum = g.total - tagLunas;
                         paid += tagLunas; unp += tagBelum;
                     } else if (g.belumCount === 0) {
-                        badgeHtml = `<span class="badge-lunas">LUNAS SEMUA</span>`;
-                        gLunasAll = true;
                         paid += g.total;
                     } else {
-                        badgeHtml = `<span class="badge-belum">BELUM TERBAYAR</span>`;
                         unp += g.total;
+                    }
+                });
+
+                totalItems = groupList.length;
+                document.getElementById('summaryCount').innerText = totalItems + " Kelompok";
+                dataToRender = groupList;
+
+            } else {
+                h.innerHTML = `<th class="p-4 px-6 w-10"></th><th class="p-4 px-6">NOP</th><th class="p-4 px-6">NAMA WP (ASLI)</th><th class="p-4 px-6 text-center text-[9px]">TGL LUNAS</th><th class="p-4 px-6 text-center text-[9px]">STATUS</th><th class="p-4 px-6 text-right font-black">TAGIHAN</th><th class="p-4 px-6 text-center">AKSI</th>`;
+                
+                window.filteredData.forEach((r, i) => {
+                    const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                    if(r.isPaid) paid += tag; else unp += tag;
+                });
+                
+                totalItems = window.filteredData.length;
+                document.getElementById('summaryCount').innerText = totalItems + " NOP";
+                dataToRender = window.filteredData;
+            }
+            
+            document.getElementById('summaryUnpaid').innerText = window.formatRupiah(unp);
+            document.getElementById('summaryPaid').innerText = window.formatRupiah(paid);
+            
+            const totalPages = Math.ceil(totalItems / window.itemsPerPage) || 1;
+            if(window.currentPage > totalPages) window.currentPage = totalPages;
+            if(window.currentPage < 1) window.currentPage = 1;
+            
+            const startIndex = (window.currentPage - 1) * window.itemsPerPage;
+            const endIndex = startIndex + window.itemsPerPage;
+            const paginatedData = dataToRender.slice(startIndex, endIndex);
+
+            if(mode === 'group') {
+                paginatedData.forEach((g, i) => {
+                    const actualIndex = startIndex + i + 1; 
+                    let badgeHtml = "";
+                    let gLunasAll = false;
+                    if(g.lunasCount > 0 && g.belumCount > 0) {
+                        badgeHtml = `<span class="badge-sebagian">SEBAGIAN LUNAS</span>`;
+                    } else if (g.belumCount === 0) {
+                        badgeHtml = `<span class="badge-lunas">LUNAS SEMUA</span>`;
+                        gLunasAll = true;
+                    } else {
+                        badgeHtml = `<span class="badge-belum">BELUM TERBAYAR</span>`;
                     }
 
                     const isExp = window.expandedGroups.has(g.nama);
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-blue-50/50 transition-colors";
                     tr.innerHTML = `
-                        <td class="p-4 px-6 text-slate-300 font-black">${i+1}</td>
+                        <td class="p-4 px-6 text-slate-300 font-black">${actualIndex}</td>
                         <td class="p-4 px-6 font-black text-blue-700 uppercase tracking-tight text-sm">${g.nama}</td>
                         <td class="p-4 px-6 text-center text-slate-400 font-mono text-[10px] font-bold">${g.rows.length} NOP</td>
                         <td class="p-4 px-6 text-center">${badgeHtml}</td>
@@ -444,7 +586,7 @@
                                 <button onclick="copyGroupExcelFull('${g.nama.replace(/'/g, "\\'")}')" class="bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg hover:bg-teal-200 flex items-center gap-1 font-black text-[9px] uppercase shadow-sm" title="Salin 9 Kolom Sesuai Excel Asli">
                                     <i data-lucide="copy" class="w-3 h-3"></i> EXCEL
                                 </button>
-                                <button onclick="openEditGroupModal('${g.nama.replace(/'/g, "\\'")}')" class="bg-blue-100 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Edit Nama"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="openEditGroupModal('${g.nama.replace(/'/g, "\\'")}')" class="bg-blue-100 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Edit Nama Kelompok"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
                                 <button onclick="copyGroupWA('${g.nama.replace(/'/g, "\\'")}')" class="bg-emerald-100 text-emerald-600 p-2 rounded-lg hover:bg-emerald-200" title="WA Kelompok"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
                                 <button onclick="toggleExpand('${g.nama.replace(/'/g, "\\'")}')" class="bg-slate-100 text-slate-500 p-2 rounded-lg hover:bg-slate-200"><i data-lucide="${isExp?'chevron-up':'chevron-down'}" class="w-4 h-4"></i></button>
                             </div>
@@ -476,14 +618,11 @@
                         b.appendChild(detailTr);
                     }
                 });
-                document.getElementById('summaryCount').innerText = groupList.length + " Kelompok";
             } else {
-                h.innerHTML = `<th class="p-4 px-6 w-10"></th><th class="p-4 px-6">NOP</th><th class="p-4 px-6">NAMA WP (ASLI)</th><th class="p-4 px-6 text-center text-[9px]">TGL LUNAS</th><th class="p-4 px-6 text-center text-[9px]">STATUS</th><th class="p-4 px-6 text-right font-black">TAGIHAN</th><th class="p-4 px-6 text-center">AKSI</th>`;
-                window.filteredData.forEach((r, i) => {
+                paginatedData.forEach((r, i) => {
                     const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
-                    if(r.isPaid) paid += tag; else unp += tag;
                     const tr = document.createElement('tr');
-                    const isSelected = window.selectedNops.has(r['NOP']);
+                    const isSelected = window.selectedNops.has(String(r['NOP']).trim());
                     tr.className = isSelected ? "bg-blue-50/80" : "hover:bg-slate-50 transition-colors";
                     tr.innerHTML = `
                         <td class="p-4 px-6 text-center"><input type="checkbox" onchange="toggleSelectNOP('${r['NOP']}')" ${isSelected?'checked':''} class="w-5 h-5 rounded-lg text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"></td>
@@ -504,10 +643,12 @@
                         </td>`;
                     b.appendChild(tr);
                 });
-                document.getElementById('summaryCount').innerText = window.filteredData.length + " NOP";
             }
-            document.getElementById('summaryUnpaid').innerText = window.formatRupiah(unp);
-            document.getElementById('summaryPaid').innerText = window.formatRupiah(paid);
+
+            document.getElementById('pageInfo').innerText = `Hal ${window.currentPage} / ${totalPages}`;
+            document.getElementById('btnPrevPage').disabled = window.currentPage === 1;
+            document.getElementById('btnNextPage').disabled = window.currentPage === totalPages;
+
             window.lucide.createIcons();
         };
 
