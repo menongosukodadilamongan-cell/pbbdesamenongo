@@ -581,10 +581,32 @@
                 
                 const matchS = s === 'all' || (s === 'paid' ? r.isPaid : !r.isPaid);
                 
-                // LOGIKA FILTER BLOK NOP (Cerdas Membaca Digit)
-                let cleanNop = String(r['NOP']).replace(/\D/g, ''); // Hapus semua titik/strip
-                let extractedBlok = cleanNop.length >= 13 ? cleanNop.substring(10, 13) : ''; // Ambil digit ke 11, 12, 13
-                const matchB = b_filter === 'all' || extractedBlok === b_filter || String(r['NOP']).includes('.' + b_filter) || String(r['NOP']).includes('-' + b_filter);
+                // LOGIKA FILTER BLOK NOP (Diperbaiki untuk membaca bagian ke-5)
+                let matchB = false;
+                if (b_filter === 'all') {
+                    matchB = true;
+                } else {
+                    let rawNop = String(r['NOP']).trim();
+                    let extractedBlok = "";
+                    
+                    // Cek jika NOP memakai format titik (contoh: 35.24.100.018.001.0032.0)
+                    if (rawNop.includes('.')) {
+                        let parts = rawNop.split('.');
+                        if (parts.length >= 5) {
+                            extractedBlok = parts[4]; // Ambil bagian ke-5 (yaitu blok)
+                        }
+                    } 
+                    // Jika format angka rapat tanpa titik (contoh: 352410001800100320)
+                    else {
+                        let cleanNop = rawNop.replace(/\D/g, ''); 
+                        if (cleanNop.length >= 13) {
+                            extractedBlok = cleanNop.substring(10, 13);
+                        }
+                    }
+                    
+                    // Pastikan yang cocok HANYA blok tersebut, tidak peduli angka lainnya
+                    matchB = (extractedBlok === b_filter);
+                }
 
                 return matchQ && matchS && matchB;
             });
