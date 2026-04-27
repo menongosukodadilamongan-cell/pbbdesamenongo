@@ -45,11 +45,9 @@
                     </select>
                 </div>
                 <div class="flex items-center ml-2">
-                    <!-- Tombol Tambah Tahun -->
                     <button onclick="addYear()" class="bg-blue-500 hover:bg-blue-400 text-white p-2 rounded-lg transition-colors shadow-sm" title="Buka Arsip Tahun Baru">
                         <i data-lucide="folder-plus" class="w-4 h-4"></i>
                     </button>
-                    <!-- Tombol Hapus Tahun (Bersih Memori) -->
                     <button onclick="deleteCurrentYear()" class="bg-rose-500 hover:bg-rose-400 text-white p-2 rounded-lg transition-colors shadow-sm ml-1" title="Hapus Arsip Tahun Ini (Bersihkan Memori)">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
@@ -71,25 +69,51 @@
 
         <div id="workspace" class="hidden opacity-0 transition-opacity duration-500">
             <!-- Filter & Action -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <input type="text" id="searchInput" oninput="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none flex-1 font-medium" placeholder="Cari Nama, NOP, atau Kelompok...">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+                <!-- Kolom Filter (Lebar) -->
+                <div class="lg:col-span-8 flex flex-col sm:flex-row flex-wrap gap-2">
+                    <input type="text" id="searchInput" oninput="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none flex-1 min-w-[200px] font-medium" placeholder="Cari Nama, NOP, atau Kelp...">
                     <select id="statusSelect" onchange="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold">
                         <option value="all">Semua Status</option>
                         <option value="unpaid">Belum Terbayar</option>
                         <option value="paid">Sudah Lunas</option>
+                    </select>
+                    <!-- FITUR BARU: Filter per Blok -->
+                    <select id="blokSelect" onchange="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-blue-700">
+                        <option value="all">Semua Blok</option>
+                        <option value="001">Blok 001</option>
+                        <option value="002">Blok 002</option>
+                        <option value="003">Blok 003</option>
+                        <option value="004">Blok 004</option>
+                        <option value="005">Blok 005</option>
+                        <option value="006">Blok 006</option>
+                        <option value="007">Blok 007</option>
+                        <option value="008">Blok 008</option>
+                        <option value="009">Blok 009</option>
+                        <option value="010">Blok 010</option>
+                        <option value="011">Blok 011</option>
+                        <option value="012">Blok 012</option>
+                        <option value="013">Blok 013</option>
+                        <option value="014">Blok 014</option>
+                        <option value="015">Blok 015</option>
                     </select>
                     <select id="viewModeSelect" onchange="filterAndSortData()" class="bg-blue-50 border border-blue-200 text-sm rounded-xl p-3 shadow-sm outline-none font-black text-blue-700 uppercase">
                         <option value="nop">Tampilan NOP (Asli)</option>
                         <option value="group">Tampilan Kelompok</option>
                     </select>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="copyFormatWA()" class="flex-1 bg-emerald-500 text-white font-black rounded-xl px-4 py-3 shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all uppercase text-xs">
-                        <i data-lucide="message-circle" class="w-5 h-5"></i> Format WA
+                
+                <!-- Kolom Tombol Aksi (Kanan) -->
+                <div class="lg:col-span-4 flex gap-2">
+                    <!-- FITUR BARU: Tombol Laporan Harian -->
+                    <button onclick="openReportModal()" class="flex-1 bg-amber-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-amber-600 transition-all uppercase text-[10px] sm:text-xs">
+                        <i data-lucide="file-text" class="w-4 h-4"></i> Laporan
                     </button>
-                    <button onclick="downloadFilteredExcel()" class="flex-1 bg-teal-600 text-white font-black rounded-xl px-4 py-3 shadow-sm flex items-center justify-center gap-2 hover:bg-teal-700 transition-all uppercase text-xs">
-                        <i data-lucide="download" class="w-5 h-5"></i> Download .xlsx
+                    <button onclick="copyFormatWA()" class="flex-1 bg-emerald-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-emerald-600 transition-all uppercase text-[10px] sm:text-xs">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i> WA
+                    </button>
+                    <button onclick="downloadFilteredExcel()" class="flex-1 bg-teal-600 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-teal-700 transition-all uppercase text-[10px] sm:text-xs">
+                        <i data-lucide="download" class="w-4 h-4"></i> Excel
                     </button>
                 </div>
             </div>
@@ -110,7 +134,7 @@
                 </div>
             </div>
 
-            <!-- Tabel Utama dengan Paginasi -->
+            <!-- Tabel Utama -->
             <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden relative">
                 <div class="table-container max-h-[650px] overflow-y-auto">
                     <table class="w-full text-sm text-left">
@@ -143,7 +167,7 @@
             </div>
         </div>
 
-        <!-- Section Upload (Hanya tampil jika Arsip Tahun tsb kosong) -->
+        <!-- Section Upload -->
         <div id="uploadSection" class="hidden bg-white p-12 rounded-3xl shadow-xl border border-slate-200 text-center animate-in">
             <i data-lucide="folder-open" class="w-20 h-20 text-blue-200 mx-auto mb-6"></i>
             <h2 class="text-2xl font-black mb-2 tracking-tight text-slate-800 uppercase">Arsip <span id="uploadYearText" class="text-blue-600"></span> Kosong</h2>
@@ -155,7 +179,7 @@
         </div>
     </div>
 
-    <!-- Bar Pilihan -->
+    <!-- Bar Pilihan (Untuk NOP yang dicentang) -->
     <div id="selectionBar" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 z-40 translate-y-32 opacity-0 transition-all duration-500 pointer-events-none border border-slate-700">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-sm font-black ring-4 ring-blue-900/30" id="selectionCount">0</div>
@@ -171,7 +195,93 @@
         </button>
     </div>
 
-    <!-- Modal Kelompok -->
+    <!-- Modal Kalkulator Pembayaran -->
+    <div id="paymentModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl animate-in text-center border-t-8 border-blue-500">
+            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="calculator" class="w-8 h-8 text-blue-600"></i>
+            </div>
+            <h3 class="font-black text-xl mb-1 text-slate-800 uppercase">Kalkulator Bayar</h3>
+            <p class="text-xs text-slate-400 mb-6 font-bold uppercase tracking-wider">Hitung Kembalian Otomatis</p>
+            
+            <div class="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Tagihan</p>
+                <div id="paymentBillAmount" class="text-2xl font-black text-slate-800">Rp 0</div>
+            </div>
+
+            <div class="mb-4 text-left">
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2 mb-1 block">Uang Diterima (Rp)</label>
+                <input type="number" id="cashInput" oninput="calculateChange()" class="w-full border-2 border-slate-200 p-4 rounded-xl outline-none font-black text-xl text-blue-600 shadow-inner focus:border-blue-500 transition-all placeholder:text-slate-300 placeholder:font-medium placeholder:text-base" placeholder="Contoh: 50000">
+            </div>
+
+            <div class="bg-emerald-50 rounded-2xl p-4 mb-8 border border-emerald-100 transition-all" id="changeContainer">
+                <p class="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest mb-1">Uang Kembalian</p>
+                <div id="paymentChangeAmount" class="text-3xl font-black text-slate-400">Rp 0</div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closePaymentModal()" class="flex-1 font-bold text-slate-500 py-4 hover:bg-slate-100 rounded-xl transition-all uppercase text-xs tracking-wider">Batal</button>
+                <button onclick="confirmPayment()" class="flex-[1.5] bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all uppercase text-xs tracking-wider flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Tandai Lunas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FITUR BARU: Modal Laporan Harian / Rekap Setoran -->
+    <div id="reportModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-8 w-full max-w-xl shadow-2xl animate-in flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                        <i data-lucide="file-text" class="w-6 h-6 text-amber-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-xl text-slate-800 uppercase leading-tight">Rekap Setoran PBB</h3>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Laporan Penerimaan Harian</p>
+                    </div>
+                </div>
+                <button onclick="closeReportModal()" class="text-slate-400 hover:text-rose-500 transition-colors bg-slate-50 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="flex items-center gap-3 mb-5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <i data-lucide="calendar" class="w-5 h-5 text-slate-400 ml-2"></i>
+                <label class="text-xs font-black text-slate-600 uppercase tracking-wider">Pilih Tanggal:</label>
+                <select id="reportDateSelect" onchange="generateReport()" class="bg-white border border-slate-200 text-sm rounded-lg p-2 outline-none font-bold text-blue-700 flex-1 cursor-pointer">
+                    <!-- Dates populated here -->
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-5">
+                <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
+                    <p class="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest mb-1">Total Uang Terkumpul</p>
+                    <div id="reportTotalAmount" class="text-2xl font-black text-emerald-600">Rp 0</div>
+                </div>
+                <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100 text-center">
+                    <p class="text-[10px] font-black text-blue-600/70 uppercase tracking-widest mb-1">Jumlah Pembayar</p>
+                    <div id="reportTotalCount" class="text-2xl font-black text-blue-600">0 NOP</div>
+                </div>
+            </div>
+
+            <div class="overflow-y-auto flex-1 mb-4 border border-slate-200 rounded-xl bg-slate-50 relative">
+                <table class="w-full text-xs text-left">
+                    <thead class="bg-slate-200/80 text-[10px] text-slate-500 uppercase sticky top-0 font-black backdrop-blur-md">
+                        <tr><th class="p-3 px-4">Nama WP & NOP</th><th class="p-3 text-right px-4">Nominal Tagihan</th></tr>
+                    </thead>
+                    <tbody id="reportTableBody" class="divide-y divide-slate-200 bg-white">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="copyReportWA()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-xl shadow-md hover:bg-emerald-600 transition-all uppercase text-xs tracking-wider flex items-center justify-center gap-2">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i> Salin Laporan ke WA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Kelompok (Add Group) -->
     <div id="groupModal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-white rounded-3xl p-10 w-full max-w-md shadow-2xl animate-in text-center">
             <h3 class="font-black text-2xl mb-2 text-slate-800 tracking-tight uppercase">Kelompok WP</h3>
@@ -225,6 +335,12 @@
         window.currentPage = 1;
         window.itemsPerPage = 50;
 
+        // State Kalkulator Pembayaran & Laporan Harian
+        window.paymentTarget = null;
+        window.paymentIsGroup = false;
+        window.paymentAmount = 0;
+        window.reportCurrentData = [];
+
         const firebaseConfig = {
           apiKey: "AIzaSyBxm751vU2Tu4iVlG0b8ASd-YWwKAN3Rro",
           authDomain: "pbbtajidsekdesmenongo.firebaseapp.com",
@@ -242,7 +358,7 @@
 
         signInAnonymously(auth).catch((error) => {
             document.getElementById('statusDot').className = "w-2 h-2 rounded-full bg-rose-500";
-            document.getElementById('statusText').innerHTML = `<span class="text-rose-600 font-bold text-[10px] uppercase">Gagal Akses: Pastikan Domain Netlify Diizinkan di Firebase</span>`;
+            document.getElementById('statusText').innerHTML = `<span class="text-rose-600 font-bold text-[10px] uppercase">Gagal Akses: Domain Belum Diizinkan</span>`;
         });
 
         onAuthStateChanged(auth, (user) => {
@@ -257,7 +373,6 @@
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
             onSnapshot(docRef, (docSnap) => {
                 let data = docSnap.exists() ? docSnap.data() : {};
-                
                 let needsMigrationSave = false;
                 let payload = {};
                 
@@ -266,7 +381,6 @@
                     payload.modifiedState_2026 = data.modifiedState_2024 || "{}";
                     payload.years = data.years ? data.years.filter(y => y !== '2024') : [];
                     if (!payload.years.includes('2026')) payload.years.push('2026');
-                    
                     payload.excelData_2024 = deleteField();
                     payload.modifiedState_2024 = deleteField();
                     needsMigrationSave = true;
@@ -282,7 +396,6 @@
                     payload.globalGroupState = JSON.stringify(newGroups);
                     payload.modifiedState_2026 = JSON.stringify(newPayments);
                     payload.years = ['2026'];
-                    
                     payload.excelData = deleteField();
                     payload.modifiedState = deleteField();
                     needsMigrationSave = true;
@@ -377,8 +490,7 @@
                 alert("Tidak bisa menghapus! Harus tersisa minimal 1 Arsip Tahun.");
                 return;
             }
-            
-            const confirmDelete = confirm(`PERINGATAN!\n\nYakin ingin menghapus PERMANEN seluruh data PBB Tahun ${window.currentYear}?\n(Tindakan ini akan mengosongkan memori Cloud Anda. Data yang dihapus tidak bisa dikembalikan).`);
+            const confirmDelete = confirm(`PERINGATAN!\n\nYakin ingin menghapus PERMANEN seluruh data PBB Tahun ${window.currentYear}?`);
             if(!confirmDelete) return;
 
             const statusText = document.getElementById('statusText');
@@ -386,7 +498,6 @@
 
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
             const payload = {};
-            
             payload[`excelData_${window.currentYear}`] = deleteField();
             payload[`modifiedState_${window.currentYear}`] = deleteField();
             
@@ -402,7 +513,6 @@
                 renderFromCloudData();
                 statusText.innerHTML = `<span class="text-emerald-600 font-black uppercase text-[10px]">Cloud Tersambung</span>`;
             } catch(e) {
-                console.error("Gagal Hapus:", e);
                 alert("Gagal menghapus arsip dari server.");
             }
         };
@@ -424,9 +534,7 @@
                 }
             });
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
-            const payload = {
-                globalGroupState: JSON.stringify(window.globalGroupMap)
-            };
+            const payload = { globalGroupState: JSON.stringify(window.globalGroupMap) };
             payload[`modifiedState_${window.currentYear}`] = JSON.stringify(yearState);
             payload['years'] = window.availableYears;
 
@@ -434,7 +542,6 @@
                 await setDoc(docRef, payload, { merge: true }); 
                 statusText.innerHTML = `<span class="text-emerald-600 font-black uppercase text-[10px]">Cloud Tersinkron</span>`;
             } catch(e) {
-                console.error("Gagal Save:", e);
                 statusText.innerHTML = `<span class="text-rose-600 font-bold text-[10px] uppercase">Gagal Menyimpan!</span>`;
             }
         };
@@ -449,17 +556,13 @@
                 let cleanedData = jsonData.filter(row => row['NAMA WP'] && row['NOP']);
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
                 const payload = {};
-                
                 const existingState = window.rawCloudData[`modifiedState_${window.currentYear}`];
                 
                 payload[`excelData_${window.currentYear}`] = JSON.stringify(cleanedData);
-                if(!existingState) {
-                    payload[`modifiedState_${window.currentYear}`] = "{}";
-                }
+                if(!existingState) payload[`modifiedState_${window.currentYear}`] = "{}";
 
                 await setDoc(docRef, payload, { merge: true });
                 window.showToast(`DATA TAHUN ${window.currentYear} BERHASIL DIPERBARUI`);
-                
                 document.getElementById('fileInput').value = ""; 
             };
             reader.readAsArrayBuffer(file);
@@ -468,15 +571,24 @@
         window.filterAndSortData = () => {
             const q = document.getElementById('searchInput').value.toLowerCase();
             const s = document.getElementById('statusSelect').value;
+            const b_filter = document.getElementById('blokSelect').value; // Fitur Blok
+            
             window.filteredData = window.globalData.filter(r => {
                 const matchQ = q === '' || 
                                String(r['NAMA WP']||'').toLowerCase().includes(q) || 
                                String(r['NOP']||'').toLowerCase().includes(q) ||
                                String(r.manualGroupName||'').toLowerCase().includes(q);
-                let matchS = s === 'all' || (s === 'paid' ? r.isPaid : !r.isPaid);
-                return matchQ && matchS;
+                
+                const matchS = s === 'all' || (s === 'paid' ? r.isPaid : !r.isPaid);
+                
+                // LOGIKA FILTER BLOK NOP (Cerdas Membaca Digit)
+                let cleanNop = String(r['NOP']).replace(/\D/g, ''); // Hapus semua titik/strip
+                let extractedBlok = cleanNop.length >= 13 ? cleanNop.substring(10, 13) : ''; // Ambil digit ke 11, 12, 13
+                const matchB = b_filter === 'all' || extractedBlok === b_filter || String(r['NOP']).includes('.' + b_filter) || String(r['NOP']).includes('-' + b_filter);
+
+                return matchQ && matchS && matchB;
             });
-            window.currentPage = 1; 
+            window.currentPage = 1;
             window.renderTable();
         };
 
@@ -497,10 +609,7 @@
             const h = document.getElementById('tableHeaderRow');
             const mode = document.getElementById('viewModeSelect').value;
             b.innerHTML = '';
-            let unp = 0, paid = 0;
-            
-            let dataToRender = [];
-            let totalItems = 0;
+            let unp = 0, paid = 0, dataToRender = [], totalItems = 0;
 
             if(mode === 'group') {
                 h.innerHTML = `<th class="p-4 px-6">NO</th><th class="p-4 px-6">KELOMPOK (WP)</th><th class="p-4 px-6 text-center">JML NOP</th><th class="p-4 px-6 text-center text-[9px]">STATUS TAHUN ${window.currentYear}</th><th class="p-4 px-6 text-right">TAGIHAN</th><th class="p-4 px-6 text-center">AKSI</th>`;
@@ -535,12 +644,10 @@
 
             } else {
                 h.innerHTML = `<th class="p-4 px-6 w-10"></th><th class="p-4 px-6">NOP</th><th class="p-4 px-6">NAMA WP (ASLI)</th><th class="p-4 px-6 text-center text-[9px]">TGL LUNAS</th><th class="p-4 px-6 text-center text-[9px]">STATUS</th><th class="p-4 px-6 text-right font-black">TAGIHAN</th><th class="p-4 px-6 text-center">AKSI</th>`;
-                
-                window.filteredData.forEach((r, i) => {
+                window.filteredData.forEach((r) => {
                     const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
                     if(r.isPaid) paid += tag; else unp += tag;
                 });
-                
                 totalItems = window.filteredData.length;
                 document.getElementById('summaryCount').innerText = totalItems + " NOP";
                 dataToRender = window.filteredData;
@@ -554,21 +661,25 @@
             if(window.currentPage < 1) window.currentPage = 1;
             
             const startIndex = (window.currentPage - 1) * window.itemsPerPage;
-            const endIndex = startIndex + window.itemsPerPage;
-            const paginatedData = dataToRender.slice(startIndex, endIndex);
+            const paginatedData = dataToRender.slice(startIndex, startIndex + window.itemsPerPage);
 
             if(mode === 'group') {
                 paginatedData.forEach((g, i) => {
                     const actualIndex = startIndex + i + 1; 
                     let badgeHtml = "";
                     let gLunasAll = false;
+                    let tagBelum = 0;
+
                     if(g.lunasCount > 0 && g.belumCount > 0) {
                         badgeHtml = `<span class="badge-sebagian">SEBAGIAN LUNAS</span>`;
+                        let tagLunas = g.rows.filter(x=>x.isPaid).reduce((a,b)=>a+parseInt(b['TOTAL']||b['TAGIHAN']||0),0);
+                        tagBelum = g.total - tagLunas;
                     } else if (g.belumCount === 0) {
                         badgeHtml = `<span class="badge-lunas">LUNAS SEMUA</span>`;
                         gLunasAll = true;
                     } else {
                         badgeHtml = `<span class="badge-belum">BELUM TERBAYAR</span>`;
+                        tagBelum = g.total;
                     }
 
                     const isExp = window.expandedGroups.has(g.nama);
@@ -582,11 +693,9 @@
                         <td class="p-4 px-6 text-right font-black text-slate-800 tracking-tight">${window.formatRupiah(g.total)}</td>
                         <td class="p-4 px-6 text-center">
                             <div class="flex gap-2 justify-center items-center">
-                                <button onclick="togglePaidGroup('${g.nama.replace(/'/g, "\\'")}', ${gLunasAll})" class="btn-lunas-action" title="Ubah Status Semua"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
-                                <button onclick="copyGroupExcelFull('${g.nama.replace(/'/g, "\\'")}')" class="bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg hover:bg-teal-200 flex items-center gap-1 font-black text-[9px] uppercase shadow-sm" title="Salin 9 Kolom Sesuai Excel Asli">
-                                    <i data-lucide="copy" class="w-3 h-3"></i> EXCEL
-                                </button>
-                                <button onclick="openEditGroupModal('${g.nama.replace(/'/g, "\\'")}')" class="bg-blue-100 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Edit Nama Kelompok"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="handlePaymentClick('${g.nama.replace(/'/g, "\\'")}', true, ${gLunasAll}, ${tagBelum})" class="btn-lunas-action" title="Ubah Status / Bayar Semua"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
+                                <button onclick="copyGroupExcelFull('${g.nama.replace(/'/g, "\\'")}')" class="bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg hover:bg-teal-200 flex items-center gap-1 font-black text-[9px] uppercase shadow-sm" title="Salin 9 Kolom Excel"><i data-lucide="copy" class="w-3 h-3"></i> EXCEL</button>
+                                <button onclick="openEditGroupModal('${g.nama.replace(/'/g, "\\'")}')" class="bg-blue-100 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Edit Nama"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
                                 <button onclick="copyGroupWA('${g.nama.replace(/'/g, "\\'")}')" class="bg-emerald-100 text-emerald-600 p-2 rounded-lg hover:bg-emerald-200" title="WA Kelompok"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
                                 <button onclick="toggleExpand('${g.nama.replace(/'/g, "\\'")}')" class="bg-slate-100 text-slate-500 p-2 rounded-lg hover:bg-slate-200"><i data-lucide="${isExp?'chevron-up':'chevron-down'}" class="w-4 h-4"></i></button>
                             </div>
@@ -599,15 +708,16 @@
                         let detailHtml = `<td colspan="6" class="p-4"><div class="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-inner"><table class="w-full text-xs text-left">
                             <thead class="bg-slate-50 text-[9px] text-slate-400 font-black uppercase tracking-wider"><tr><th class="p-3 px-4">NOP</th><th class="p-3">NAMA (ASLI)</th><th class="p-3 text-right">TAGIHAN</th><th class="p-3 text-center">STATUS</th><th class="p-3 text-center">TGL LUNAS</th><th class="p-3 text-center">AKSI</th></tr></thead><tbody>`;
                         g.rows.forEach(r => {
+                            const rowTagihan = parseInt(r['TOTAL']||r['TAGIHAN']||0);
                             detailHtml += `<tr class="border-t border-slate-100 hover:bg-slate-50 transition-colors">
                                 <td class="p-3 px-4 font-mono text-[9px] text-slate-500 font-bold">${r['NOP']}</td>
                                 <td class="p-3 font-bold text-slate-600 uppercase text-[10px]">${r['NAMA WP']}</td>
-                                <td class="p-3 text-right font-black text-slate-700">${window.formatRupiah(parseInt(r['TOTAL']||r['TAGIHAN']||0))}</td>
+                                <td class="p-3 text-right font-black text-slate-700">${window.formatRupiah(rowTagihan)}</td>
                                 <td class="p-3 text-center"><span class="${r.isPaid?'text-emerald-500':'text-rose-500'} font-black text-[9px] uppercase">${r.isPaid?'LUNAS':'BELUM TERBAYAR'}</span></td>
                                 <td class="p-3 text-center text-[9px] text-slate-400 font-bold">${r.paidDate || '-'}</td>
                                 <td class="p-3 text-center">
                                     <div class="flex gap-3 justify-center items-center">
-                                        <button onclick="togglePaidRow('${r['NOP']}')" class="text-blue-600 font-black text-[10px] uppercase underline hover:text-blue-800">Ubah</button>
+                                        <button onclick="handlePaymentClick('${r['NOP']}', false, ${r.isPaid}, ${rowTagihan})" class="text-blue-600 font-black text-[10px] uppercase underline hover:text-blue-800">Ubah</button>
                                         <button onclick="removeFromGroup('${r['NOP']}')" class="text-rose-500 font-black text-[10px] uppercase underline hover:text-rose-700">Lepas</button>
                                     </div>
                                 </td>
@@ -636,7 +746,7 @@
                         <td class="p-4 px-6 text-right font-black ${r.isPaid?'line-through opacity-20':'text-slate-800'} tracking-tight">${window.formatRupiah(tag)}</td>
                         <td class="p-4 px-6 text-center">
                             <div class="flex gap-2 justify-center items-center">
-                                <button onclick="togglePaidRow('${r['NOP']}')" class="btn-lunas-action" title="Ubah Status"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
+                                <button onclick="handlePaymentClick('${r['NOP']}', false, ${r.isPaid}, ${tag})" class="btn-lunas-action" title="Ubah Status / Bayar"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
                                 <button onclick="copyFullExcelRow('${r['NOP']}')" class="btn-copy-action" title="Salin 9 Kolom Excel"><i data-lucide="copy" class="w-4 h-4"></i></button>
                                 <button onclick="copyNopContent('${r['NOP']}')" class="btn-nop-action" title="Salin NOP"><i data-lucide="tag" class="w-4 h-4"></i></button>
                             </div>
@@ -648,8 +758,144 @@
             document.getElementById('pageInfo').innerText = `Hal ${window.currentPage} / ${totalPages}`;
             document.getElementById('btnPrevPage').disabled = window.currentPage === 1;
             document.getElementById('btnNextPage').disabled = window.currentPage === totalPages;
-
             window.lucide.createIcons();
+        };
+
+        // --- FITUR LAPORAN HARIAN / SETORAN BANK ---
+        window.openReportModal = () => {
+            const dateSelect = document.getElementById('reportDateSelect');
+            const uniqueDates = new Set();
+            
+            window.globalData.forEach(r => {
+                if (r.isPaid && r.paidDate) {
+                    const datePart = r.paidDate.split(',')[0].trim().split(' ')[0].trim();
+                    if (datePart) uniqueDates.add(datePart);
+                }
+            });
+
+            const datesArray = Array.from(uniqueDates).reverse();
+            
+            if (datesArray.length === 0) {
+                alert("Belum ada data pembayaran yang tersimpan.");
+                return;
+            }
+
+            dateSelect.innerHTML = datesArray.map(d => `<option value="${d}">${d}</option>`).join('');
+            
+            const todayStr = new Date().toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric'}).split(' ')[0].split(',')[0];
+            if (datesArray.includes(todayStr)) {
+                dateSelect.value = todayStr;
+            } else {
+                dateSelect.selectedIndex = 0;
+            }
+
+            window.generateReport();
+            document.getElementById('reportModal').classList.remove('hidden');
+        };
+
+        window.closeReportModal = () => document.getElementById('reportModal').classList.add('hidden');
+
+        window.generateReport = () => {
+            const selectedDate = document.getElementById('reportDateSelect').value;
+            const tbody = document.getElementById('reportTableBody');
+            let totalAmount = 0;
+            window.reportCurrentData = [];
+
+            window.globalData.forEach(r => {
+                if (r.isPaid && r.paidDate) {
+                    const datePart = r.paidDate.split(',')[0].trim().split(' ')[0].trim();
+                    if (datePart === selectedDate) {
+                        window.reportCurrentData.push(r);
+                        totalAmount += parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                    }
+                }
+            });
+
+            window.reportCurrentData.sort((a,b) => (a.paidDate > b.paidDate ? 1 : -1));
+
+            document.getElementById('reportTotalAmount').innerText = window.formatRupiah(totalAmount);
+            document.getElementById('reportTotalCount').innerText = `${window.reportCurrentData.length} NOP`;
+
+            tbody.innerHTML = window.reportCurrentData.map((r) => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 px-4">
+                        <div class="font-black text-slate-700 text-[11px] uppercase">${r['NAMA WP']}</div>
+                        <div class="font-mono text-[9px] text-slate-400">${r['NOP']}</div>
+                    </td>
+                    <td class="p-3 text-right px-4 font-black text-slate-700">${window.formatRupiah(parseInt(r['TOTAL']||r['TAGIHAN']||0))}</td>
+                </tr>
+            `).join('');
+        };
+
+        window.copyReportWA = () => {
+            const selectedDate = document.getElementById('reportDateSelect').value;
+            let text = `*REKAP SETORAN PBB DESA MENONGO*\nTanggal: *${selectedDate}*\n--------------------------\n`;
+            let total = 0;
+            
+            window.reportCurrentData.forEach((r, i) => {
+                const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                total += tag;
+                text += `${i+1}. ${r['NAMA WP']} - ${window.formatRupiah(tag)}\n`;
+            });
+            
+            text += `--------------------------\n*TOTAL SETORAN: ${window.formatRupiah(total)}*\n*JUMLAH: ${window.reportCurrentData.length} NOP*\n--------------------------\n_Dicetak dari Aplikasi PBB Desa Menongo_`;
+            window.copyText(text, "Laporan Setoran Disalin!");
+        };
+
+        // --- KALKULATOR PEMBAYARAN ---
+        window.handlePaymentClick = (target, isGroup, isCurrentlyPaid, amount) => {
+            if (isCurrentlyPaid) {
+                if (isGroup) window.togglePaidGroup(target, true);
+                else window.togglePaidRow(target);
+            } else {
+                window.paymentTarget = target;
+                window.paymentIsGroup = isGroup;
+                window.paymentAmount = parseInt(amount) || 0;
+
+                document.getElementById('paymentBillAmount').innerText = window.formatRupiah(window.paymentAmount);
+                document.getElementById('cashInput').value = '';
+                document.getElementById('paymentChangeAmount').innerText = 'Rp 0';
+                document.getElementById('changeContainer').className = "bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100 transition-all";
+                
+                document.getElementById('paymentModal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('cashInput').focus(), 100); 
+            }
+        };
+
+        window.closePaymentModal = () => document.getElementById('paymentModal').classList.add('hidden');
+
+        window.calculateChange = () => {
+            const cash = parseInt(document.getElementById('cashInput').value) || 0;
+            const change = cash - window.paymentAmount;
+            const changeEl = document.getElementById('paymentChangeAmount');
+            const changeContainer = document.getElementById('changeContainer');
+            
+            if (cash === 0) {
+                changeEl.innerText = 'Rp 0';
+                changeEl.className = "text-3xl font-black text-slate-400";
+                changeContainer.className = "bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100 transition-all";
+            } else if (change < 0) {
+                changeEl.innerText = "Uang Kurang!";
+                changeEl.className = "text-2xl font-black text-rose-500 mt-1";
+                changeContainer.className = "bg-rose-50 rounded-2xl p-4 mb-8 border border-rose-200 transition-all";
+            } else {
+                changeEl.innerText = window.formatRupiah(change);
+                changeEl.className = "text-3xl font-black text-emerald-500";
+                changeContainer.className = "bg-emerald-50 rounded-2xl p-4 mb-8 border border-emerald-200 transition-all";
+            }
+        };
+
+        window.confirmPayment = () => {
+            const cash = parseInt(document.getElementById('cashInput').value) || 0;
+            if (cash > 0 && cash < window.paymentAmount) {
+                if(!confirm("Uang yang dimasukkan kurang dari tagihan. Yakin ingin menandai LUNAS?")) return;
+            }
+
+            if (window.paymentIsGroup) window.togglePaidGroup(window.paymentTarget, false);
+            else window.togglePaidRow(window.paymentTarget);
+            
+            window.closePaymentModal();
+            window.showToast("Pembayaran Berhasil Dicatat");
         };
 
         window.togglePaidRow = (nop) => { 
@@ -693,14 +939,9 @@
             const oldN = document.getElementById('oldGroupNameHidden').value;
             const newN = document.getElementById('editGroupNameInput').value.trim();
             if(!newN || oldN === newN) return window.closeEditGroupModal();
-            
-            for(let nop in window.globalGroupMap) {
-                if(window.globalGroupMap[nop] === oldN) window.globalGroupMap[nop] = newN;
-            }
+            for(let nop in window.globalGroupMap) { if(window.globalGroupMap[nop] === oldN) window.globalGroupMap[nop] = newN; }
             window.globalData.forEach(r => { if(r.manualGroupName === oldN) r.manualGroupName = newN; });
-            
-            window.saveState(); window.closeEditGroupModal();
-            window.showToast(`Kelompok diubah: ${newN}`);
+            window.saveState(); window.closeEditGroupModal(); window.showToast(`Kelompok diubah: ${newN}`);
         };
 
         window.removeFromGroup = (nop) => { 
@@ -708,8 +949,7 @@
                 delete window.globalGroupMap[nop];
                 const r = window.globalData.find(x => String(x['NOP']).trim() === String(nop).trim()); 
                 if(r) r.manualGroupName = null; 
-                window.renderTable();
-                window.saveState(); 
+                window.renderTable(); window.saveState(); 
             } 
         };
 
@@ -806,25 +1046,16 @@
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `PBB_${window.currentYear}`);
-            
             let fileName = `PBB_MENONGO_${window.currentYear}_SEMUA`;
             const s = document.getElementById('statusSelect').value;
             if(s === 'paid') fileName = `PBB_MENONGO_${window.currentYear}_LUNAS`;
             if(s === 'unpaid') fileName = `PBB_MENONGO_${window.currentYear}_BELUM_TERBAYAR`;
-            
             XLSX.writeFile(wb, `${fileName}.xlsx`);
         };
 
         window.copyText = async (text, msg) => {
-            try {
-                await navigator.clipboard.writeText(text);
-                window.showToast(msg);
-            } catch (err) {
-                const el = document.createElement('textarea');
-                el.value = text; document.body.appendChild(el);
-                el.select(); document.execCommand('copy');
-                document.body.removeChild(el);
-                window.showToast(msg);
+            try { await navigator.clipboard.writeText(text); window.showToast(msg); } catch (err) {
+                const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); window.showToast(msg);
             }
         };
 
