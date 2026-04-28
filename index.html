@@ -78,7 +78,7 @@
                         <option value="unpaid">Belum Terbayar</option>
                         <option value="paid">Sudah Lunas</option>
                     </select>
-                    <!-- FITUR BARU: Filter per Blok -->
+                    <!-- Filter per Blok -->
                     <select id="blokSelect" onchange="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-blue-700">
                         <option value="all">Semua Blok</option>
                         <option value="001">Blok 001</option>
@@ -97,6 +97,11 @@
                         <option value="014">Blok 014</option>
                         <option value="015">Blok 015</option>
                     </select>
+                    <!-- FITUR BARU: Toggle Pembulatan Ribuan -->
+                    <label class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-emerald-600 flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input type="checkbox" id="roundToggle" onchange="filterAndSortData()" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                        Bulatkan Ribuan
+                    </label>
                     <select id="viewModeSelect" onchange="filterAndSortData()" class="bg-blue-50 border border-blue-200 text-sm rounded-xl p-3 shadow-sm outline-none font-black text-blue-700 uppercase">
                         <option value="nop">Tampilan NOP (Asli)</option>
                         <option value="group">Tampilan Kelompok</option>
@@ -105,7 +110,6 @@
                 
                 <!-- Kolom Tombol Aksi (Kanan) -->
                 <div class="lg:col-span-4 flex gap-2">
-                    <!-- FITUR BARU: Tombol Laporan Harian -->
                     <button onclick="openReportModal()" class="flex-1 bg-amber-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-amber-600 transition-all uppercase text-[10px] sm:text-xs">
                         <i data-lucide="file-text" class="w-4 h-4"></i> Laporan
                     </button>
@@ -228,7 +232,7 @@
         </div>
     </div>
 
-    <!-- FITUR BARU: Modal Laporan Harian / Rekap Setoran -->
+    <!-- Modal Laporan Harian / Rekap Setoran -->
     <div id="reportModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-3xl p-8 w-full max-w-xl shadow-2xl animate-in flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
@@ -355,6 +359,17 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // --- HELPER: PEMBULATAN RIBUAN TERDEKAT ---
+        window.getNominalTagihan = (r) => {
+            const raw = parseInt(r['TOTAL'] || r['TAGIHAN'] || 0);
+            const isRounded = document.getElementById('roundToggle')?.checked;
+            if (isRounded) {
+                // Membulatkan ke ribuan terdekat (misal 34.500 -> 35.000, 34.250 -> 34.000)
+                return Math.round(raw / 1000) * 1000;
+            }
+            return raw;
+        };
 
         signInAnonymously(auth).catch((error) => {
             document.getElementById('statusDot').className = "w-2 h-2 rounded-full bg-rose-500";
@@ -571,7 +586,7 @@
         window.filterAndSortData = () => {
             const q = document.getElementById('searchInput').value.toLowerCase();
             const s = document.getElementById('statusSelect').value;
-            const b_filter = document.getElementById('blokSelect').value; // Fitur Blok
+            const b_filter = document.getElementById('blokSelect').value;
             
             window.filteredData = window.globalData.filter(r => {
                 const matchQ = q === '' || 
@@ -581,30 +596,19 @@
                 
                 const matchS = s === 'all' || (s === 'paid' ? r.isPaid : !r.isPaid);
                 
-                // LOGIKA FILTER BLOK NOP (Diperbaiki untuk membaca bagian ke-5)
                 let matchB = false;
                 if (b_filter === 'all') {
                     matchB = true;
                 } else {
                     let rawNop = String(r['NOP']).trim();
                     let extractedBlok = "";
-                    
-                    // Cek jika NOP memakai format titik (contoh: 35.24.100.018.001.0032.0)
                     if (rawNop.includes('.')) {
                         let parts = rawNop.split('.');
-                        if (parts.length >= 5) {
-                            extractedBlok = parts[4]; // Ambil bagian ke-5 (yaitu blok)
-                        }
-                    } 
-                    // Jika format angka rapat tanpa titik (contoh: 352410001800100320)
-                    else {
+                        if (parts.length >= 5) extractedBlok = parts[4];
+                    } else {
                         let cleanNop = rawNop.replace(/\D/g, ''); 
-                        if (cleanNop.length >= 13) {
-                            extractedBlok = cleanNop.substring(10, 13);
-                        }
+                        if (cleanNop.length >= 13) extractedBlok = cleanNop.substring(10, 13);
                     }
-                    
-                    // Pastikan yang cocok HANYA blok tersebut, tidak peduli angka lainnya
                     matchB = (extractedBlok === b_filter);
                 }
 
@@ -640,7 +644,10 @@
                     if(r.manualGroupName) {
                         if(!groups[r.manualGroupName]) groups[r.manualGroupName] = { nama: r.manualGroupName, rows: [], total: 0, lunasCount: 0, belumCount: 0 };
                         groups[r.manualGroupName].rows.push(r);
-                        groups[r.manualGroupName].total += parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                        
+                        const tagihanRp = window.getNominalTagihan(r);
+                        groups[r.manualGroupName].total += tagihanRp;
+                        
                         if(r.isPaid) groups[r.manualGroupName].lunasCount++;
                         else groups[r.manualGroupName].belumCount++;
                     }
@@ -650,7 +657,7 @@
                 
                 groupList.forEach(g => {
                     if(g.lunasCount > 0 && g.belumCount > 0) {
-                        let tagLunas = g.rows.filter(x=>x.isPaid).reduce((a,b)=>a+parseInt(b['TOTAL']||b['TAGIHAN']||0),0);
+                        let tagLunas = g.rows.filter(x=>x.isPaid).reduce((a,b)=>a+window.getNominalTagihan(b),0);
                         let tagBelum = g.total - tagLunas;
                         paid += tagLunas; unp += tagBelum;
                     } else if (g.belumCount === 0) {
@@ -667,7 +674,7 @@
             } else {
                 h.innerHTML = `<th class="p-4 px-6 w-10"></th><th class="p-4 px-6">NOP</th><th class="p-4 px-6">NAMA WP (ASLI)</th><th class="p-4 px-6 text-center text-[9px]">TGL LUNAS</th><th class="p-4 px-6 text-center text-[9px]">STATUS</th><th class="p-4 px-6 text-right font-black">TAGIHAN</th><th class="p-4 px-6 text-center">AKSI</th>`;
                 window.filteredData.forEach((r) => {
-                    const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                    const tag = window.getNominalTagihan(r);
                     if(r.isPaid) paid += tag; else unp += tag;
                 });
                 totalItems = window.filteredData.length;
@@ -694,7 +701,7 @@
 
                     if(g.lunasCount > 0 && g.belumCount > 0) {
                         badgeHtml = `<span class="badge-sebagian">SEBAGIAN LUNAS</span>`;
-                        let tagLunas = g.rows.filter(x=>x.isPaid).reduce((a,b)=>a+parseInt(b['TOTAL']||b['TAGIHAN']||0),0);
+                        let tagLunas = g.rows.filter(x=>x.isPaid).reduce((a,b)=>a+window.getNominalTagihan(b),0);
                         tagBelum = g.total - tagLunas;
                     } else if (g.belumCount === 0) {
                         badgeHtml = `<span class="badge-lunas">LUNAS SEMUA</span>`;
@@ -730,7 +737,7 @@
                         let detailHtml = `<td colspan="6" class="p-4"><div class="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-inner"><table class="w-full text-xs text-left">
                             <thead class="bg-slate-50 text-[9px] text-slate-400 font-black uppercase tracking-wider"><tr><th class="p-3 px-4">NOP</th><th class="p-3">NAMA (ASLI)</th><th class="p-3 text-right">TAGIHAN</th><th class="p-3 text-center">STATUS</th><th class="p-3 text-center">TGL LUNAS</th><th class="p-3 text-center">AKSI</th></tr></thead><tbody>`;
                         g.rows.forEach(r => {
-                            const rowTagihan = parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                            const rowTagihan = window.getNominalTagihan(r);
                             detailHtml += `<tr class="border-t border-slate-100 hover:bg-slate-50 transition-colors">
                                 <td class="p-3 px-4 font-mono text-[9px] text-slate-500 font-bold">${r['NOP']}</td>
                                 <td class="p-3 font-bold text-slate-600 uppercase text-[10px]">${r['NAMA WP']}</td>
@@ -752,7 +759,7 @@
                 });
             } else {
                 paginatedData.forEach((r, i) => {
-                    const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                    const tag = window.getNominalTagihan(r);
                     const tr = document.createElement('tr');
                     const isSelected = window.selectedNops.has(String(r['NOP']).trim());
                     tr.className = isSelected ? "bg-blue-50/80" : "hover:bg-slate-50 transition-colors";
@@ -828,7 +835,7 @@
                     const datePart = r.paidDate.split(',')[0].trim().split(' ')[0].trim();
                     if (datePart === selectedDate) {
                         window.reportCurrentData.push(r);
-                        totalAmount += parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                        totalAmount += window.getNominalTagihan(r);
                     }
                 }
             });
@@ -844,7 +851,7 @@
                         <div class="font-black text-slate-700 text-[11px] uppercase">${r['NAMA WP']}</div>
                         <div class="font-mono text-[9px] text-slate-400">${r['NOP']}</div>
                     </td>
-                    <td class="p-3 text-right px-4 font-black text-slate-700">${window.formatRupiah(parseInt(r['TOTAL']||r['TAGIHAN']||0))}</td>
+                    <td class="p-3 text-right px-4 font-black text-slate-700">${window.formatRupiah(window.getNominalTagihan(r))}</td>
                 </tr>
             `).join('');
         };
@@ -855,7 +862,7 @@
             let total = 0;
             
             window.reportCurrentData.forEach((r, i) => {
-                const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                const tag = window.getNominalTagihan(r);
                 total += tag;
                 text += `${i+1}. ${r['NAMA WP']} - ${window.formatRupiah(tag)}\n`;
             });
@@ -979,7 +986,8 @@
             const r = window.globalData.find(x => String(x['NOP']).trim() === String(nop).trim());
             if(!r) return;
             const ket = r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR";
-            const rowStr = `${r['NO']||''}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${r['TOTAL']||r['TAGIHAN']||''}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
+            const tag = window.getNominalTagihan(r);
+            const rowStr = `${r['NO']||''}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${tag}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
             await window.copyText(rowStr, `BARIS DISALIN KE EXCEL!`);
         };
 
@@ -988,7 +996,8 @@
             const headers = "NO\tNOP\tTAHUN\tTAGIHAN\tDENDA\tTOTAL\tNAMA WP\tLETAK OP\tKETERANGAN";
             const content = rows.map((r, i) => {
                 const ket = r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR";
-                return `${r['NO']||(i+1)}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${r['TOTAL']||r['TAGIHAN']||''}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
+                const tag = window.getNominalTagihan(r);
+                return `${r['NO']||(i+1)}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${tag}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
             }).join('\n');
             await window.copyText(`${headers}\n${content}`, `KELOMPOK ${groupName} DISALIN KE EXCEL (9 KOLOM)!`);
         };
@@ -999,7 +1008,8 @@
             const headers = "NO\tNOP\tTAHUN\tTAGIHAN\tDENDA\tTOTAL\tNAMA WP\tLETAK OP\tKETERANGAN";
             const content = rows.map((r, i) => {
                 const ket = r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR";
-                return `${r['NO']||(i+1)}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${r['TOTAL']||r['TAGIHAN']||''}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
+                const tag = window.getNominalTagihan(r);
+                return `${r['NO']||(i+1)}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${tag}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
             }).join('\n');
             await window.copyText(`${headers}\n${content}`, `DATA TERPILIH DISALIN KE FORMAT EXCEL!`);
         };
@@ -1027,7 +1037,7 @@
             let text = `*INFO TAGIHAN PBB DESA MENONGO*\n${headerTitle}\nTahun Pajak: *${window.currentYear}*\n--------------------------\n`;
             
             data.forEach((r, i) => {
-                const tag = parseInt(r['TOTAL']||r['TAGIHAN']||0);
+                const tag = window.getNominalTagihan(r);
                 totalAll += tag;
                 if(r.isPaid) { totalLunas += tag; countLunas++; }
                 else { totalBelum += tag; countBelum++; }
@@ -1059,7 +1069,7 @@
                 'TAHUN': r['TAHUN'] || '',
                 'TAGIHAN': r['TAGIHAN'] || '',
                 'DENDA': r['DENDA'] || '',
-                'TOTAL': r['TOTAL'] || r['TAGIHAN'] || 0,
+                'TOTAL': window.getNominalTagihan(r),
                 'NAMA WP': r['NAMA WP'],
                 'LETAK OP': r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '',
                 'KETERANGAN': r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR",
