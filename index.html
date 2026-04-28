@@ -97,10 +97,10 @@
                         <option value="014">Blok 014</option>
                         <option value="015">Blok 015</option>
                     </select>
-                    <!-- FITUR BARU: Toggle Pembulatan Ribuan -->
-                    <label class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-emerald-600 flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors">
+                    <!-- FITUR DIPERBARUI: Toggle Pembulatan Ke Atas -->
+                    <label class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-emerald-600 flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors" title="Bulatkan selalu ke ribuan atas agar setoran desa tidak kurang">
                         <input type="checkbox" id="roundToggle" onchange="filterAndSortData()" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
-                        Bulatkan Ribuan
+                        Bulatkan ke Atas
                     </label>
                     <select id="viewModeSelect" onchange="filterAndSortData()" class="bg-blue-50 border border-blue-200 text-sm rounded-xl p-3 shadow-sm outline-none font-black text-blue-700 uppercase">
                         <option value="nop">Tampilan NOP (Asli)</option>
@@ -360,13 +360,15 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- HELPER: PEMBULATAN RIBUAN TERDEKAT ---
+        // --- HELPER: PEMBULATAN SELALU KE ATAS (DIPERBARUI) ---
         window.getNominalTagihan = (r) => {
             const raw = parseInt(r['TOTAL'] || r['TAGIHAN'] || 0);
             const isRounded = document.getElementById('roundToggle')?.checked;
             if (isRounded) {
-                // Membulatkan ke ribuan terdekat (misal 34.500 -> 35.000, 34.250 -> 34.000)
-                return Math.round(raw / 1000) * 1000;
+                // Mengubah pembulatan menjadi SELALU NAIK KE ATAS
+                // Contoh: 10.100 -> 11.000 | 10.400 -> 11.000
+                // Agar pagu desa/setoran bank tidak pernah minus (rugi)
+                return Math.ceil(raw / 1000) * 1000;
             }
             return raw;
         };
