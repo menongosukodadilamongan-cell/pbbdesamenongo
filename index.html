@@ -97,7 +97,7 @@
                         <option value="014">Blok 014</option>
                         <option value="015">Blok 015</option>
                     </select>
-                    <!-- FITUR DIPERBARUI: Toggle Pembulatan Ke Atas -->
+                    <!-- Toggle Pembulatan Ke Atas -->
                     <label class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-emerald-600 flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors" title="Bulatkan selalu ke ribuan atas agar setoran desa tidak kurang">
                         <input type="checkbox" id="roundToggle" onchange="filterAndSortData()" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
                         Bulatkan ke Atas
@@ -183,18 +183,27 @@
         </div>
     </div>
 
-    <!-- Bar Pilihan (Untuk NOP yang dicentang) -->
-    <div id="selectionBar" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 z-40 translate-y-32 opacity-0 transition-all duration-500 pointer-events-none border border-slate-700">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-sm font-black ring-4 ring-blue-900/30" id="selectionCount">0</div>
-            <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline">Terpilih</span>
+    <!-- FITUR BARU: Bar Pilihan (Lebih Canggih dengan Total Harga & Tombol Bayar) -->
+    <div id="selectionBar" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-4 sm:px-6 py-4 rounded-3xl shadow-2xl flex flex-col sm:flex-row items-center gap-4 z-40 translate-y-48 opacity-0 transition-all duration-500 pointer-events-none border border-slate-700 w-[95%] sm:w-auto max-w-3xl">
+        <div class="flex items-center justify-between w-full sm:w-auto gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-sm font-black ring-4 ring-blue-900/30" id="selectionCount">0</div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Tagihan Terpilih</span>
+                    <span id="selectionTotalAmount" class="text-sm sm:text-base font-black text-emerald-400 leading-none mt-0.5">Rp 0</span>
+                </div>
+            </div>
+            <button onclick="clearSelection()" class="text-slate-500 hover:text-white transition-colors sm:hidden">
+                <i data-lucide="x-circle" class="w-6 h-6"></i>
+            </button>
         </div>
-        <div class="flex gap-2">
-            <button onclick="openGroupModal()" class="bg-white text-slate-900 font-black py-2.5 px-4 sm:px-6 rounded-xl text-[10px] uppercase hover:bg-slate-100 transition-all">Gabung Kelp.</button>
-            <button onclick="copySelectedExcelFull()" class="bg-teal-500 text-white font-black py-2.5 px-4 sm:px-6 rounded-xl text-[10px] uppercase hover:bg-teal-600 transition-all hidden sm:block">Copy Excel</button>
-            <button onclick="copySelectedWA()" class="bg-emerald-500 text-white font-black py-2.5 px-4 sm:px-6 rounded-xl text-[10px] uppercase hover:bg-emerald-600 transition-all">Kirim WA</button>
+        <div class="flex flex-wrap sm:flex-nowrap justify-center gap-2 w-full sm:w-auto">
+            <button onclick="handleSelectedPaymentClick()" class="flex-1 sm:flex-none bg-blue-500 text-white font-black py-2.5 px-3 sm:px-5 rounded-xl text-[10px] uppercase hover:bg-blue-600 transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]">Bayar Semua</button>
+            <button onclick="openGroupModal()" class="flex-1 sm:flex-none bg-white text-slate-900 font-black py-2.5 px-3 sm:px-5 rounded-xl text-[10px] uppercase hover:bg-slate-100 transition-all">Gabung</button>
+            <button onclick="copySelectedWA()" class="flex-1 sm:flex-none bg-emerald-500 text-white font-black py-2.5 px-3 sm:px-5 rounded-xl text-[10px] uppercase hover:bg-emerald-600 transition-all">WA</button>
+            <button onclick="copySelectedExcelFull()" class="flex-1 sm:flex-none bg-teal-500 text-white font-black py-2.5 px-3 sm:px-5 rounded-xl text-[10px] uppercase hover:bg-teal-600 transition-all hidden md:block">Excel</button>
         </div>
-        <button onclick="clearSelection()" class="text-slate-500 hover:text-white transition-colors">
+        <button onclick="clearSelection()" class="text-slate-500 hover:text-white transition-colors hidden sm:block ml-2">
             <i data-lucide="x-circle" class="w-7 h-7"></i>
         </button>
     </div>
@@ -342,6 +351,7 @@
         // State Kalkulator Pembayaran & Laporan Harian
         window.paymentTarget = null;
         window.paymentIsGroup = false;
+        window.paymentIsSelected = false; // State baru untuk pembayaran mutli-NOP
         window.paymentAmount = 0;
         window.reportCurrentData = [];
 
@@ -360,14 +370,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- HELPER: PEMBULATAN SELALU KE ATAS (DIPERBARUI) ---
+        // --- HELPER: PEMBULATAN SELALU KE ATAS ---
         window.getNominalTagihan = (r) => {
             const raw = parseInt(r['TOTAL'] || r['TAGIHAN'] || 0);
             const isRounded = document.getElementById('roundToggle')?.checked;
             if (isRounded) {
-                // Mengubah pembulatan menjadi SELALU NAIK KE ATAS
-                // Contoh: 10.100 -> 11.000 | 10.400 -> 11.000
-                // Agar pagu desa/setoran bank tidak pernah minus (rugi)
                 return Math.ceil(raw / 1000) * 1000;
             }
             return raw;
@@ -463,12 +470,14 @@
                 document.getElementById('workspace').classList.remove('opacity-0');
                 updateGroupSuggestions();
                 window.filterAndSortData();
+                window.updateSelectionUI(); // Perbarui UI Bar Hitam Bawah jika ada yang berubah
             } else {
                 window.globalData = [];
                 window.filteredData = [];
                 document.getElementById('workspace').classList.add('hidden');
                 document.getElementById('uploadSection').classList.remove('hidden');
                 document.getElementById('uploadYearText').innerText = "Tahun " + window.currentYear;
+                window.updateSelectionUI();
             }
         };
 
@@ -630,6 +639,41 @@
         window.changePage = (delta) => {
             window.currentPage += delta;
             window.renderTable();
+        };
+
+        // --- FITUR BARU: MANAJEMEN BAR PILIHAN MULTI NOP ---
+        window.updateSelectionUI = () => {
+            const count = window.selectedNops.size;
+            document.getElementById('selectionCount').innerText = count;
+
+            if (count > 0) {
+                document.getElementById('selectionBar').classList.remove('translate-y-48', 'opacity-0', 'pointer-events-none');
+                
+                // Kalkulasi total bayar khusus untuk NOP terpilih yang BELUM LUNAS
+                let totalUnpaid = 0;
+                window.globalData.forEach(r => {
+                    if (window.selectedNops.has(String(r['NOP']).trim()) && !r.isPaid) {
+                        totalUnpaid += window.getNominalTagihan(r);
+                    }
+                });
+                document.getElementById('selectionTotalAmount').innerText = window.formatRupiah(totalUnpaid);
+            } else {
+                document.getElementById('selectionBar').classList.add('translate-y-48', 'opacity-0', 'pointer-events-none');
+            }
+        };
+
+        window.toggleSelectNOP = (nop) => { 
+            const n = String(nop).trim();
+            if(window.selectedNops.has(n)) window.selectedNops.delete(n); 
+            else window.selectedNops.add(n); 
+            window.renderTable(); 
+            window.updateSelectionUI(); 
+        };
+        
+        window.clearSelection = () => { 
+            window.selectedNops.clear(); 
+            window.renderTable(); 
+            window.updateSelectionUI(); 
         };
 
         window.renderTable = () => {
@@ -873,8 +917,10 @@
             window.copyText(text, "Laporan Setoran Disalin!");
         };
 
-        // --- KALKULATOR PEMBAYARAN ---
+        // --- KALKULATOR PEMBAYARAN MULTI-FUNGSI ---
         window.handlePaymentClick = (target, isGroup, isCurrentlyPaid, amount) => {
+            window.paymentIsSelected = false; // Reset state multi-pilihan
+            
             if (isCurrentlyPaid) {
                 if (isGroup) window.togglePaidGroup(target, true);
                 else window.togglePaidRow(target);
@@ -891,6 +937,51 @@
                 document.getElementById('paymentModal').classList.remove('hidden');
                 setTimeout(() => document.getElementById('cashInput').focus(), 100); 
             }
+        };
+        
+        // Modal Khusus Pembayaran NOP Terpilih
+        window.handleSelectedPaymentClick = () => {
+            if (window.selectedNops.size === 0) return;
+
+            let totalUnpaid = 0;
+            let allPaid = true;
+            
+            window.globalData.forEach(r => {
+                if (window.selectedNops.has(String(r['NOP']).trim())) {
+                    if (!r.isPaid) {
+                        totalUnpaid += window.getNominalTagihan(r);
+                        allPaid = false;
+                    }
+                }
+            });
+
+            if (allPaid) {
+                if (confirm("Semua NOP yang Anda centang sudah berstatus LUNAS. Apakah Anda ingin membatalkan pelunasan mereka?")) {
+                    window.globalData.forEach(r => {
+                        if (window.selectedNops.has(String(r['NOP']).trim())) {
+                            r.isPaid = false;
+                            r.paidDate = "";
+                        }
+                    });
+                    window.clearSelection();
+                    window.saveState();
+                }
+                return;
+            }
+
+            // Buka modal untuk pembayaran kolektif
+            window.paymentTarget = 'selected';
+            window.paymentIsGroup = false;
+            window.paymentIsSelected = true;
+            window.paymentAmount = totalUnpaid;
+
+            document.getElementById('paymentBillAmount').innerText = window.formatRupiah(window.paymentAmount);
+            document.getElementById('cashInput').value = '';
+            document.getElementById('paymentChangeAmount').innerText = 'Rp 0';
+            document.getElementById('changeContainer').className = "bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100 transition-all";
+            
+            document.getElementById('paymentModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('cashInput').focus(), 100); 
         };
 
         window.closePaymentModal = () => document.getElementById('paymentModal').classList.add('hidden');
@@ -922,9 +1013,24 @@
                 if(!confirm("Uang yang dimasukkan kurang dari tagihan. Yakin ingin menandai LUNAS?")) return;
             }
 
-            if (window.paymentIsGroup) window.togglePaidGroup(window.paymentTarget, false);
-            else window.togglePaidRow(window.paymentTarget);
+            if (window.paymentIsSelected) {
+                // Logika Pelunasan Kolektif Multi NOP
+                const now = new Date().toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+                window.globalData.forEach(r => {
+                    if (window.selectedNops.has(String(r['NOP']).trim()) && !r.isPaid) {
+                        r.isPaid = true;
+                        r.paidDate = now;
+                    }
+                });
+                window.clearSelection(); // Ini otomatis me-render ulang tabel
+                window.saveState();
+            } else if (window.paymentIsGroup) {
+                window.togglePaidGroup(window.paymentTarget, false);
+            } else {
+                window.togglePaidRow(window.paymentTarget);
+            }
             
+            window.paymentIsSelected = false; // Reset State
             window.closePaymentModal();
             window.showToast("Pembayaran Berhasil Dicatat");
         };
@@ -1094,8 +1200,6 @@
         };
 
         window.toggleExpand = (name) => { if(window.expandedGroups.has(name)) window.expandedGroups.delete(name); else window.expandedGroups.add(name); window.renderTable(); };
-        window.toggleSelectNOP = (nop) => { if(window.selectedNops.has(nop)) window.selectedNops.delete(nop); else window.selectedNops.add(nop); window.renderTable(); if(window.selectedNops.size > 0) document.getElementById('selectionBar').classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none'); else document.getElementById('selectionBar').classList.add('translate-y-32', 'opacity-0', 'pointer-events-none'); document.getElementById('selectionCount').innerText = window.selectedNops.size; };
-        window.clearSelection = () => { window.selectedNops.clear(); window.renderTable(); document.getElementById('selectionBar').classList.add('translate-y-32', 'opacity-0', 'pointer-events-none'); };
         window.formatRupiah = (a) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(a || 0);
         window.showToast = (m) => { const t = document.getElementById('toast'); document.getElementById('toastMessage').innerText = m; t.classList.remove('translate-y-20', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 3000); };
 
