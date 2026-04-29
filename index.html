@@ -97,7 +97,7 @@
                         <option value="014">Blok 014</option>
                         <option value="015">Blok 015</option>
                     </select>
-                    <!-- Toggle Pembulatan -->
+                    <!-- Toggle Pembulatan Ke Atas -->
                     <label class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-emerald-600 flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors" title="Bulatkan selalu ke ribuan atas agar setoran desa tidak kurang">
                         <input type="checkbox" id="roundToggle" onchange="filterAndSortData()" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
                         Bulatkan ke Atas
@@ -208,7 +208,7 @@
         </button>
     </div>
 
-    <!-- FITUR BARU: Modal Daftar Terpilih (Keranjang NOP) -->
+    <!-- Modal Daftar Terpilih (Keranjang NOP) -->
     <div id="selectedListModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-xl shadow-2xl animate-in flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
@@ -878,7 +878,6 @@
             window.lucide.createIcons();
         };
 
-        // --- FITUR BARU: BUKA KERANJANG DAFTAR NOP TERPILIH ---
         window.openSelectedListModal = () => {
             if (window.selectedNops.size === 0) return;
             
@@ -929,7 +928,7 @@
             if (window.selectedNops.size === 0) {
                 window.closeSelectedListModal();
             } else {
-                window.openSelectedListModal(); // Segarkan isi keranjang
+                window.openSelectedListModal(); 
             }
         };
 
@@ -1017,24 +1016,34 @@
             if(window.reportCurrentData.length === 0) return alert("Tidak ada data setoran untuk diunduh.");
             
             const selectedDate = document.getElementById('reportDateSelect').value;
+            
+            // Format 9 Kolom + Keterangan + Tanggal Bayar
             const exportData = window.reportCurrentData.map((r, i) => ({
-                'NO': i + 1,
+                'NO': r['NO'] || (i + 1),
                 'NOP': r['NOP'],
-                'NAMA WP': r['NAMA WP'],
                 'TAHUN': r['TAHUN'] || '',
+                'TAGIHAN': r['TAGIHAN'] || '',
+                'DENDA': r['DENDA'] || '',
+                'TOTAL': window.getNominalTagihan(r),
+                'NAMA WP': r['NAMA WP'],
                 'LETAK OP': r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '',
-                'TAGIHAN': window.getNominalTagihan(r),
-                'TANGGAL BAYAR': r.paidDate
+                'KETERANGAN': r.isPaid ? 'LUNAS' : 'BELUM TERBAYAR',
+                'TANGGAL BAYAR': r.paidDate || ''
             }));
             
             const totalBayar = window.reportCurrentData.reduce((acc, curr) => acc + window.getNominalTagihan(curr), 0);
+            
+            // Baris penutup Total
             exportData.push({
                 'NO': '',
                 'NOP': '',
-                'NAMA WP': '',
                 'TAHUN': '',
-                'LETAK OP': 'TOTAL SETORAN HARI INI',
-                'TAGIHAN': totalBayar,
+                'TAGIHAN': '',
+                'DENDA': '',
+                'TOTAL': totalBayar,
+                'NAMA WP': 'TOTAL SETORAN HARI INI',
+                'LETAK OP': '',
+                'KETERANGAN': '',
                 'TANGGAL BAYAR': ''
             });
 
@@ -1180,7 +1189,27 @@
             window.saveState(); 
         };
 
-        window.openGroupModal = () => { document.getElementById('groupNameInput').value = ''; document.getElementById('groupModal').classList.remove('hidden'); };
+        window.openGroupModal = () => { 
+            document.getElementById('groupNameInput').value = ''; 
+            
+            const previewContainer = document.getElementById('selectedNopsPreview');
+            let previewHtml = `<div class="font-bold text-slate-500 mb-2 text-[10px] uppercase flex justify-between items-center"><span>Data yang digabung:</span> <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">${window.selectedNops.size} NOP</span></div>`;
+            previewHtml += `<ul class="divide-y divide-slate-200">`;
+            window.globalData.forEach(r => {
+                if(window.selectedNops.has(String(r['NOP']).trim())) {
+                    previewHtml += `
+                        <li class="py-1.5 flex justify-between items-center">
+                            <span class="font-bold text-slate-700 text-[10px] uppercase truncate mr-2">${r['NAMA WP']}</span>
+                            <span class="text-slate-400 font-mono text-[9px] shrink-0">${r['NOP']}</span>
+                        </li>`;
+                }
+            });
+            previewHtml += `</ul>`;
+            previewContainer.innerHTML = previewHtml;
+
+            document.getElementById('groupModal').classList.remove('hidden'); 
+        };
+        
         window.closeGroupModal = () => document.getElementById('groupModal').classList.add('hidden');
         window.confirmGroup = () => {
             const n = document.getElementById('groupNameInput').value.trim();
