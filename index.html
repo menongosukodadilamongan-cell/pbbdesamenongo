@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -98,7 +97,7 @@
                         <option value="014">Blok 014</option>
                         <option value="015">Blok 015</option>
                     </select>
-                    <!-- Toggle Pembulatan Ke Atas -->
+                    <!-- Toggle Pembulatan -->
                     <label class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-emerald-600 flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors" title="Bulatkan selalu ke ribuan atas agar setoran desa tidak kurang">
                         <input type="checkbox" id="roundToggle" onchange="filterAndSortData()" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
                         Bulatkan ke Atas
@@ -111,7 +110,7 @@
                 
                 <!-- Kolom Tombol Aksi (Kanan) -->
                 <div class="lg:col-span-4 flex gap-2">
-                    <button onclick="openReportModal()" class="flex-1 bg-amber-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-amber-600 transition-all uppercase text-[10px] sm:text-xs">
+                    <button onclick="openReportModal()" class="flex-[1.5] bg-amber-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-amber-600 transition-all uppercase text-[10px] sm:text-xs">
                         <i data-lucide="file-text" class="w-4 h-4"></i> Laporan
                     </button>
                     <button onclick="copyFormatWA()" class="flex-1 bg-emerald-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-emerald-600 transition-all uppercase text-[10px] sm:text-xs">
@@ -184,7 +183,7 @@
         </div>
     </div>
 
-    <!-- FITUR BARU: Bar Pilihan (Lebih Canggih dengan Total Harga & Tombol Bayar) -->
+    <!-- Bar Pilihan (Untuk NOP yang dicentang) -->
     <div id="selectionBar" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-4 sm:px-6 py-4 rounded-3xl shadow-2xl flex flex-col sm:flex-row items-center gap-4 z-40 translate-y-48 opacity-0 transition-all duration-500 pointer-events-none border border-slate-700 w-[95%] sm:w-auto max-w-3xl">
         <div class="flex items-center justify-between w-full sm:w-auto gap-6">
             <div class="flex items-center gap-3">
@@ -287,9 +286,13 @@
                 </table>
             </div>
 
-            <div class="pt-2">
-                <button onclick="copyReportWA()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-xl shadow-md hover:bg-emerald-600 transition-all uppercase text-xs tracking-wider flex items-center justify-center gap-2">
-                    <i data-lucide="message-circle" class="w-5 h-5"></i> Salin Laporan ke WA
+            <!-- FITUR BARU: Tombol Download Excel Laporan -->
+            <div class="pt-2 flex gap-2">
+                <button onclick="copyReportWA()" class="flex-[2] bg-emerald-500 text-white font-black py-3 sm:py-4 rounded-xl shadow-md hover:bg-emerald-600 transition-all uppercase text-[10px] sm:text-xs tracking-wider flex items-center justify-center gap-2">
+                    <i data-lucide="message-circle" class="w-4 h-4 sm:w-5 sm:h-5"></i> Salin WA
+                </button>
+                <button onclick="downloadReportExcel()" class="flex-1 bg-teal-600 text-white font-black py-3 sm:py-4 rounded-xl shadow-md hover:bg-teal-700 transition-all uppercase text-[10px] sm:text-xs tracking-wider flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4 sm:w-5 sm:h-5"></i> Excel
                 </button>
             </div>
         </div>
@@ -345,14 +348,12 @@
         window.globalGroupMap = {}; 
         window.rawCloudData = {};
         
-        // Paginasi
         window.currentPage = 1;
         window.itemsPerPage = 50;
 
-        // State Kalkulator Pembayaran & Laporan Harian
         window.paymentTarget = null;
         window.paymentIsGroup = false;
-        window.paymentIsSelected = false; // State baru untuk pembayaran mutli-NOP
+        window.paymentIsSelected = false; 
         window.paymentAmount = 0;
         window.reportCurrentData = [];
 
@@ -371,13 +372,10 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- HELPER: PEMBULATAN SELALU KE ATAS ---
         window.getNominalTagihan = (r) => {
             const raw = parseInt(r['TOTAL'] || r['TAGIHAN'] || 0);
             const isRounded = document.getElementById('roundToggle')?.checked;
-            if (isRounded) {
-                return Math.ceil(raw / 1000) * 1000;
-            }
+            if (isRounded) return Math.ceil(raw / 1000) * 1000;
             return raw;
         };
 
@@ -471,7 +469,7 @@
                 document.getElementById('workspace').classList.remove('opacity-0');
                 updateGroupSuggestions();
                 window.filterAndSortData();
-                window.updateSelectionUI(); // Perbarui UI Bar Hitam Bawah jika ada yang berubah
+                window.updateSelectionUI(); 
             } else {
                 window.globalData = [];
                 window.filteredData = [];
@@ -642,15 +640,12 @@
             window.renderTable();
         };
 
-        // --- FITUR BARU: MANAJEMEN BAR PILIHAN MULTI NOP ---
         window.updateSelectionUI = () => {
             const count = window.selectedNops.size;
             document.getElementById('selectionCount').innerText = count;
 
             if (count > 0) {
                 document.getElementById('selectionBar').classList.remove('translate-y-48', 'opacity-0', 'pointer-events-none');
-                
-                // Kalkulasi total bayar khusus untuk NOP terpilih yang BELUM LUNAS
                 let totalUnpaid = 0;
                 window.globalData.forEach(r => {
                     if (window.selectedNops.has(String(r['NOP']).trim()) && !r.isPaid) {
@@ -837,7 +832,6 @@
             window.lucide.createIcons();
         };
 
-        // --- FITUR LAPORAN HARIAN / SETORAN BANK ---
         window.openReportModal = () => {
             const dateSelect = document.getElementById('reportDateSelect');
             const uniqueDates = new Set();
@@ -918,9 +912,44 @@
             window.copyText(text, "Laporan Setoran Disalin!");
         };
 
-        // --- KALKULATOR PEMBAYARAN MULTI-FUNGSI ---
+        // --- FITUR BARU: DOWNLOAD LAPORAN EXCEL HARIAN ---
+        window.downloadReportExcel = () => {
+            if(window.reportCurrentData.length === 0) return alert("Tidak ada data setoran untuk diunduh.");
+            
+            const selectedDate = document.getElementById('reportDateSelect').value;
+            const exportData = window.reportCurrentData.map((r, i) => ({
+                'NO': i + 1,
+                'NOP': r['NOP'],
+                'NAMA WP': r['NAMA WP'],
+                'TAHUN': r['TAHUN'] || '',
+                'LETAK OP': r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '',
+                'TAGIHAN': window.getNominalTagihan(r),
+                'TANGGAL BAYAR': r.paidDate
+            }));
+            
+            const totalBayar = window.reportCurrentData.reduce((acc, curr) => acc + window.getNominalTagihan(curr), 0);
+            exportData.push({
+                'NO': '',
+                'NOP': '',
+                'NAMA WP': '',
+                'TAHUN': '',
+                'LETAK OP': 'TOTAL SETORAN HARI INI',
+                'TAGIHAN': totalBayar,
+                'TANGGAL BAYAR': ''
+            });
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            
+            const safeDateStr = selectedDate.replace(/\//g, '-'); 
+            XLSX.utils.book_append_sheet(wb, ws, `Setoran_${safeDateStr}`);
+            
+            const fileName = `Rekap_Setoran_PBB_Menongo_${safeDateStr}`;
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+        };
+
         window.handlePaymentClick = (target, isGroup, isCurrentlyPaid, amount) => {
-            window.paymentIsSelected = false; // Reset state multi-pilihan
+            window.paymentIsSelected = false; 
             
             if (isCurrentlyPaid) {
                 if (isGroup) window.togglePaidGroup(target, true);
@@ -940,7 +969,6 @@
             }
         };
         
-        // Modal Khusus Pembayaran NOP Terpilih
         window.handleSelectedPaymentClick = () => {
             if (window.selectedNops.size === 0) return;
 
@@ -970,7 +998,6 @@
                 return;
             }
 
-            // Buka modal untuk pembayaran kolektif
             window.paymentTarget = 'selected';
             window.paymentIsGroup = false;
             window.paymentIsSelected = true;
@@ -1015,7 +1042,6 @@
             }
 
             if (window.paymentIsSelected) {
-                // Logika Pelunasan Kolektif Multi NOP
                 const now = new Date().toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
                 window.globalData.forEach(r => {
                     if (window.selectedNops.has(String(r['NOP']).trim()) && !r.isPaid) {
@@ -1023,7 +1049,7 @@
                         r.paidDate = now;
                     }
                 });
-                window.clearSelection(); // Ini otomatis me-render ulang tabel
+                window.clearSelection(); 
                 window.saveState();
             } else if (window.paymentIsGroup) {
                 window.togglePaidGroup(window.paymentTarget, false);
@@ -1031,7 +1057,7 @@
                 window.togglePaidRow(window.paymentTarget);
             }
             
-            window.paymentIsSelected = false; // Reset State
+            window.paymentIsSelected = false; 
             window.closePaymentModal();
             window.showToast("Pembayaran Berhasil Dicatat");
         };
@@ -1208,6 +1234,3 @@
     </script>
 </body>
 </html>
-
-
-```
