@@ -103,6 +103,7 @@
                         <option value="menongo">Menongo</option>
                         <option value="ngelo">Ngelo</option>
                         <option value="keduwul">Keduwul</option>
+                        <option value="belum_diatur">Belum Diatur</option>
                     </select>
                     <!-- Toggle Pembulatan Ke Atas -->
                     <label class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-emerald-600 flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors" title="Bulatkan selalu ke ribuan atas agar setoran desa tidak kurang">
@@ -734,9 +735,11 @@
                 let matchDusun = false;
                 if (d_filter === 'all') {
                     matchDusun = true;
+                } else if (d_filter === 'belum_diatur') {
+                    matchDusun = !r.manualDusunName;
                 } else {
-                    let dusun = r.manualDusunName ? String(r.manualDusunName).toLowerCase() : String(r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '').toLowerCase();
-                    matchDusun = dusun.includes(d_filter);
+                    let dusun = r.manualDusunName ? String(r.manualDusunName).toLowerCase() : '';
+                    matchDusun = (dusun === d_filter);
                 }
 
                 return matchQ && matchS && matchB && matchDusun;
@@ -1161,16 +1164,17 @@
                 'MENONGO': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
                 'NGELO': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
                 'KEDUWUL': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
-                'LAINNYA': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 }
+                'BELUM DIATUR': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 }
             };
 
             window.globalData.forEach(r => {
                 // Cek dusun manual terlebih dahulu, jika kosong baru baca LETAK OP excel
-                const letak = String(r.manualDusunName || r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '').toUpperCase();
-                let dusun = 'LAINNYA';
-                if (letak.includes('MENONGO')) dusun = 'MENONGO';
-                else if (letak.includes('NGELO')) dusun = 'NGELO';
-                else if (letak.includes('KEDUWUL')) dusun = 'KEDUWUL';
+                const dusunManual = r.manualDusunName ? String(r.manualDusunName).toUpperCase() : '';
+                let dusun = 'BELUM DIATUR';
+                
+                if (dusunManual === 'MENONGO') dusun = 'MENONGO';
+                else if (dusunManual === 'NGELO') dusun = 'NGELO';
+                else if (dusunManual === 'KEDUWUL') dusun = 'KEDUWUL';
 
                 const tag = window.getNominalTagihan(r);
 
@@ -1183,9 +1187,9 @@
             });
 
             let html = '<div class="grid gap-4">';
-            ['MENONGO', 'NGELO', 'KEDUWUL', 'LAINNYA'].forEach(d => {
+            ['MENONGO', 'NGELO', 'KEDUWUL', 'BELUM DIATUR'].forEach(d => {
                 const s = stats[d];
-                if (d === 'LAINNYA' && s.totalNOP === 0) return; // Sembunyikan Lainnya jika kosong
+                if (d === 'BELUM DIATUR' && s.totalNOP === 0) return; // Sembunyikan Lainnya jika kosong
                 
                 const pctNOP = s.totalNOP > 0 ? Math.round((s.lunasNOP / s.totalNOP) * 100) : 0;
                 const pctRp = s.totalRp > 0 ? Math.round((s.lunasRp / s.totalRp) * 100) : 0;
