@@ -97,6 +97,13 @@
                         <option value="014">Blok 014</option>
                         <option value="015">Blok 015</option>
                     </select>
+                    <!-- FITUR BARU: Filter per Dusun -->
+                    <select id="dusunSelect" onchange="filterAndSortData()" class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-indigo-700">
+                        <option value="all">Semua Dusun</option>
+                        <option value="menongo">Menongo</option>
+                        <option value="ngelo">Ngelo</option>
+                        <option value="keduwul">Keduwul</option>
+                    </select>
                     <!-- Toggle Pembulatan Ke Atas -->
                     <label class="bg-white border border-slate-200 text-sm rounded-xl p-3 shadow-sm outline-none font-bold text-emerald-600 flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors" title="Bulatkan selalu ke ribuan atas agar setoran desa tidak kurang">
                         <input type="checkbox" id="roundToggle" onchange="filterAndSortData()" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
@@ -109,8 +116,11 @@
                 </div>
                 
                 <!-- Kolom Tombol Aksi (Kanan) -->
-                <div class="lg:col-span-4 flex gap-2">
-                    <button onclick="openReportModal()" class="flex-[1.5] bg-amber-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-amber-600 transition-all uppercase text-[10px] sm:text-xs">
+                <div class="lg:col-span-4 flex flex-wrap gap-2">
+                    <button onclick="openDusunModal()" class="flex-[1.5] sm:flex-1 bg-indigo-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-indigo-600 transition-all uppercase text-[10px] sm:text-xs">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Progres
+                    </button>
+                    <button onclick="openReportModal()" class="flex-1 bg-amber-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-amber-600 transition-all uppercase text-[10px] sm:text-xs">
                         <i data-lucide="file-text" class="w-4 h-4"></i> Laporan
                     </button>
                     <button onclick="copyFormatWA()" class="flex-1 bg-emerald-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-emerald-600 transition-all uppercase text-[10px] sm:text-xs">
@@ -339,6 +349,28 @@
                 <button onclick="downloadReportExcel()" class="flex-1 bg-teal-600 text-white font-black py-3 sm:py-4 rounded-xl shadow-md hover:bg-teal-700 transition-all uppercase text-[10px] sm:text-xs tracking-wider flex items-center justify-center gap-2">
                     <i data-lucide="download" class="w-4 h-4 sm:w-5 sm:h-5"></i> Excel
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FITUR BARU: Modal Progres Dusun -->
+    <div id="dusunModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-2xl shadow-2xl animate-in flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center">
+                        <i data-lucide="bar-chart-3" class="w-6 h-6 text-indigo-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-xl text-slate-800 uppercase leading-tight">Progres Per Dusun</h3>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Tahun Pajak <span id="dusunYearLabel"></span></p>
+                    </div>
+                </div>
+                <button onclick="closeDusunModal()" class="text-slate-400 hover:text-rose-500 transition-colors bg-slate-50 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 mb-4 relative p-2" id="dusunStatsContainer">
+                <!-- Diisi otomatis oleh JS -->
             </div>
         </div>
     </div>
@@ -646,6 +678,7 @@
             const q = document.getElementById('searchInput').value.toLowerCase();
             const s = document.getElementById('statusSelect').value;
             const b_filter = document.getElementById('blokSelect').value;
+            const d_filter = document.getElementById('dusunSelect').value; // Fitur Dusun
             
             window.filteredData = window.globalData.filter(r => {
                 const matchQ = q === '' || 
@@ -671,7 +704,16 @@
                     matchB = (extractedBlok === b_filter);
                 }
 
-                return matchQ && matchS && matchB;
+                // Logika Filter Dusun
+                let matchDusun = false;
+                if (d_filter === 'all') {
+                    matchDusun = true;
+                } else {
+                    const letak = String(r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '').toLowerCase();
+                    matchDusun = letak.includes(d_filter);
+                }
+
+                return matchQ && matchS && matchB && matchDusun;
             });
             window.currentPage = 1;
             window.renderTable();
@@ -1014,6 +1056,81 @@
             text += `--------------------------\n*TOTAL SETORAN: ${window.formatRupiah(total)}*\n*JUMLAH: ${window.reportCurrentData.length} NOP*\n--------------------------\n_Dicetak dari Aplikasi PBB Desa Menongo_`;
             window.copyText(text, "Laporan Setoran Disalin!");
         };
+
+        // --- FITUR BARU: STATISTIK PROGRES DUSUN ---
+        window.openDusunModal = () => {
+            document.getElementById('dusunYearLabel').innerText = window.currentYear;
+            const container = document.getElementById('dusunStatsContainer');
+
+            const stats = {
+                'MENONGO': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
+                'NGELO': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
+                'KEDUWUL': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
+                'LAINNYA': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 }
+            };
+
+            window.globalData.forEach(r => {
+                const letak = String(r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '').toUpperCase();
+                let dusun = 'LAINNYA';
+                if (letak.includes('MENONGO')) dusun = 'MENONGO';
+                else if (letak.includes('NGELO')) dusun = 'NGELO';
+                else if (letak.includes('KEDUWUL')) dusun = 'KEDUWUL';
+
+                const tag = window.getNominalTagihan(r);
+
+                stats[dusun].totalNOP++;
+                stats[dusun].totalRp += tag;
+                if (r.isPaid) {
+                    stats[dusun].lunasNOP++;
+                    stats[dusun].lunasRp += tag;
+                }
+            });
+
+            let html = '<div class="grid gap-4">';
+            ['MENONGO', 'NGELO', 'KEDUWUL', 'LAINNYA'].forEach(d => {
+                const s = stats[d];
+                if (d === 'LAINNYA' && s.totalNOP === 0) return; // Sembunyikan Lainnya jika kosong
+                
+                const pctNOP = s.totalNOP > 0 ? Math.round((s.lunasNOP / s.totalNOP) * 100) : 0;
+                const pctRp = s.totalRp > 0 ? Math.round((s.lunasRp / s.totalRp) * 100) : 0;
+                
+                html += `
+                <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 relative overflow-hidden transition-all hover:border-indigo-300">
+                    <h4 class="font-black text-lg text-slate-800 mb-3 uppercase tracking-tight flex justify-between items-center">
+                        DUSUN ${d} 
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full border border-slate-200">${s.totalNOP} Wajib Pajak</span>
+                    </h4>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                            <p class="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="coins" class="w-3 h-3"></i> Progres Uang (Rp)</p>
+                            <p class="text-base font-black text-emerald-600 mt-1">${window.formatRupiah(s.lunasRp)}</p>
+                            <p class="text-xs text-slate-400 font-bold mb-2">dari target ${window.formatRupiah(s.totalRp)}</p>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1 overflow-hidden">
+                                <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-1000" style="width: ${pctRp}%"></div>
+                            </div>
+                            <p class="text-right text-[10px] font-black text-emerald-600 mt-1.5">${pctRp}% TERKUMPUL</p>
+                        </div>
+                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                            <p class="text-[10px] font-black text-blue-600/70 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="file-check-2" class="w-3 h-3"></i> Progres Berkas (NOP)</p>
+                            <p class="text-base font-black text-blue-600 mt-1">${s.lunasNOP} Lunas</p>
+                            <p class="text-xs text-slate-400 font-bold mb-2">dari total ${s.totalNOP} Tagihan</p>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1 overflow-hidden">
+                                <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-1000" style="width: ${pctNOP}%"></div>
+                            </div>
+                            <p class="text-right text-[10px] font-black text-blue-600 mt-1.5">${pctNOP}% SELESAI</p>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+            window.lucide.createIcons();
+            document.getElementById('dusunModal').classList.remove('hidden');
+        };
+        
+        window.closeDusunModal = () => document.getElementById('dusunModal').classList.add('hidden');
 
         window.downloadReportExcel = () => {
             if(window.reportCurrentData.length === 0) return alert("Tidak ada data setoran untuk diunduh.");
