@@ -20,6 +20,10 @@
         .badge-sebagian { @apply bg-amber-100 text-amber-600 px-2 py-1 rounded text-[9px] font-black uppercase; }
         .animate-in { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Custom scrollbar for small lists */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; rounded: 8px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-10">
@@ -118,7 +122,7 @@
                 
                 <!-- Kolom Tombol Aksi (Kanan) -->
                 <div class="lg:col-span-4 flex flex-wrap gap-2">
-                    <button onclick="openDusunModal()" class="flex-[1.5] sm:flex-1 bg-indigo-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-indigo-600 transition-all uppercase text-[10px] sm:text-xs">
+                    <button onclick="openProgressModal()" class="flex-[1.5] sm:flex-1 bg-indigo-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-indigo-600 transition-all uppercase text-[10px] sm:text-xs">
                         <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Progres
                     </button>
                     <button onclick="openReportModal()" class="flex-1 bg-amber-500 text-white font-black rounded-xl px-2 py-3 shadow-sm flex items-center justify-center gap-1 hover:bg-amber-600 transition-all uppercase text-[10px] sm:text-xs">
@@ -242,7 +246,6 @@
                         <tr><th class="p-3 px-4">Nama WP & NOP</th><th class="p-3 text-right px-4">Tagihan</th><th class="p-3 text-center px-4 w-10">Batal</th></tr>
                     </thead>
                     <tbody id="selectedListTableBody" class="divide-y divide-slate-200 bg-white">
-                        <!-- Populated by JS -->
                     </tbody>
                 </table>
             </div>
@@ -319,7 +322,6 @@
                 <i data-lucide="calendar" class="w-5 h-5 text-slate-400 ml-2"></i>
                 <label class="text-xs font-black text-slate-600 uppercase tracking-wider">Pilih Tanggal:</label>
                 <select id="reportDateSelect" onchange="generateReport()" class="bg-white border border-slate-200 text-sm rounded-lg p-2 outline-none font-bold text-blue-700 flex-1 cursor-pointer">
-                    <!-- Dates populated here -->
                 </select>
             </div>
 
@@ -355,29 +357,49 @@
         </div>
     </div>
 
-    <!-- Modal Progres Dusun -->
-    <div id="dusunModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-2xl shadow-2xl animate-in flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+    <!-- Modal Progres Rinci (Dusun & Blok) -->
+    <div id="progressModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-4xl shadow-2xl animate-in flex flex-col max-h-[90vh] overflow-hidden">
+            <!-- Header Modal -->
+            <div class="flex justify-between items-center p-6 border-b border-slate-100 bg-white z-10 relative">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center">
                         <i data-lucide="bar-chart-3" class="w-6 h-6 text-indigo-600"></i>
                     </div>
                     <div>
-                        <h3 class="font-black text-xl text-slate-800 uppercase leading-tight">Progres Per Dusun</h3>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Tahun Pajak <span id="dusunYearLabel"></span></p>
+                        <h3 class="font-black text-xl text-slate-800 uppercase leading-tight">Progres & Rincian Tagihan</h3>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Tahun Pajak <span id="progressYearLabel"></span></p>
                     </div>
                 </div>
-                <button onclick="closeDusunModal()" class="text-slate-400 hover:text-rose-500 transition-colors bg-slate-50 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button onclick="closeProgressModal()" class="text-slate-400 hover:text-rose-500 transition-colors bg-slate-50 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
 
-            <div class="overflow-y-auto flex-1 mb-4 relative p-2" id="dusunStatsContainer">
-                <!-- Diisi otomatis oleh JS -->
+            <!-- Tabs -->
+            <div class="flex px-6 pt-4 gap-2 bg-slate-50/50 border-b border-slate-200">
+                <button id="btnTabDusun" onclick="switchProgressTab('dusun')" class="px-5 py-3 bg-white text-indigo-700 font-black rounded-t-xl border-t border-l border-r border-slate-200 relative top-[1px] shadow-[0_-2px_5px_rgba(0,0,0,0.02)] uppercase text-xs flex items-center gap-2">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i> Per Dusun
+                </button>
+                <button id="btnTabBlok" onclick="switchProgressTab('blok')" class="px-5 py-3 text-slate-500 font-bold hover:bg-white rounded-t-xl hover:border-t hover:border-l hover:border-r hover:border-slate-200 uppercase text-xs flex items-center gap-2 transition-all">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i> Per Blok
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="overflow-y-auto flex-1 p-6 bg-slate-50/50 custom-scroll">
+                <!-- Tab Content: Dusun -->
+                <div id="contentTabDusun" class="grid gap-4">
+                    <!-- Dimuat via JS -->
+                </div>
+
+                <!-- Tab Content: Blok -->
+                <div id="contentTabBlok" class="hidden grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <!-- Dimuat via JS -->
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- FITUR BARU: Modal Set Dusun Manual -->
+    <!-- Modal Set Dusun Manual -->
     <div id="setDusunModal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-white rounded-3xl p-8 sm:p-10 w-full max-w-md shadow-2xl animate-in text-center flex flex-col">
             <h3 class="font-black text-2xl mb-2 text-slate-800 tracking-tight uppercase">Atur Dusun</h3>
@@ -447,7 +469,7 @@
         window.availableYears = [window.currentYear];
         
         window.globalGroupMap = {}; 
-        window.globalDusunMap = {}; // State Baru untuk Pemetaan Dusun
+        window.globalDusunMap = {}; 
         window.rawCloudData = {};
         
         window.currentPage = 1;
@@ -458,6 +480,10 @@
         window.paymentIsSelected = false; 
         window.paymentAmount = 0;
         window.reportCurrentData = [];
+        
+        // Progress UI States
+        window.activeProgressTab = 'dusun';
+        window.expandedUnpaidLists = new Set(); 
 
         const firebaseConfig = {
           apiKey: "AIzaSyBxm751vU2Tu4iVlG0b8ASd-YWwKAN3Rro",
@@ -553,7 +579,7 @@
         window.renderFromCloudData = () => {
             const data = window.rawCloudData;
             window.globalGroupMap = data.globalGroupState ? JSON.parse(data.globalGroupState) : {};
-            window.globalDusunMap = data.globalDusunState ? JSON.parse(data.globalDusunState) : {}; // Ambil data Dusun manual
+            window.globalDusunMap = data.globalDusunState ? JSON.parse(data.globalDusunState) : {};
             
             updateYearUI();
 
@@ -567,7 +593,7 @@
                     row.isPaid = currentState[nop]?.isPaid || false;
                     row.paidDate = currentState[nop]?.paidDate || "";
                     row.manualGroupName = window.globalGroupMap[nop] || null;
-                    row.manualDusunName = window.globalDusunMap[nop] || null; // Sinkronisasi Dusun
+                    row.manualDusunName = window.globalDusunMap[nop] || null;
                 });
                 document.getElementById('uploadSection').classList.add('hidden');
                 document.getElementById('workspace').classList.remove('hidden');
@@ -666,7 +692,7 @@
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pbb_sync', 'master_doc');
             const payload = { 
                 globalGroupState: JSON.stringify(window.globalGroupMap),
-                globalDusunState: JSON.stringify(window.globalDusunMap) // Simpan data Dusun manual ke Cloud
+                globalDusunState: JSON.stringify(window.globalDusunMap) 
             };
             payload[`modifiedState_${window.currentYear}`] = JSON.stringify(yearState);
             payload['years'] = window.availableYears;
@@ -705,7 +731,7 @@
             const q = document.getElementById('searchInput').value.toLowerCase();
             const s = document.getElementById('statusSelect').value;
             const b_filter = document.getElementById('blokSelect').value;
-            const d_filter = document.getElementById('dusunSelect').value; // Filter Dusun
+            const d_filter = document.getElementById('dusunSelect').value; 
             
             window.filteredData = window.globalData.filter(r => {
                 const matchQ = q === '' || 
@@ -731,7 +757,6 @@
                     matchB = (extractedBlok === b_filter);
                 }
 
-                // Logika Cerdas Filter Dusun (Cek Manual Dusun, baru cek Letak OP)
                 let matchDusun = false;
                 if (d_filter === 'all') {
                     matchDusun = true;
@@ -786,7 +811,6 @@
             window.updateSelectionUI(); 
         };
 
-        // FITUR BARU: TANDAI SEMUA HASIL FILTER
         window.toggleSelectAll = () => {
             const checkbox = document.getElementById('selectAllCheckbox');
             const isChecked = checkbox.checked;
@@ -848,7 +872,6 @@
                 dataToRender = groupList;
 
             } else {
-                // Periksa apakah semua row di halaman filter saat ini sudah dicentang
                 const allFilteredSelected = window.filteredData.length > 0 && window.filteredData.every(r => window.selectedNops.has(String(r['NOP']).trim()));
 
                 h.innerHTML = `
@@ -977,9 +1000,245 @@
             window.lucide.createIcons();
         };
 
+        // FITUR BARU: PROGRES RINCI (DUSUN & BLOK)
+        window.openProgressModal = () => {
+            document.getElementById('progressYearLabel').innerText = window.currentYear;
+            
+            const dusunStats = {
+                'MENONGO': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0, unpaidList: [] },
+                'NGELO': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0, unpaidList: [] },
+                'KEDUWUL': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0, unpaidList: [] },
+                'BELUM DIATUR': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0, unpaidList: [] }
+            };
+            const blokStats = {};
+
+            // Data Aggregation
+            window.globalData.forEach(r => {
+                // Dusun Logic
+                const dusunManual = r.manualDusunName ? String(r.manualDusunName).toUpperCase() : '';
+                let dusun = 'BELUM DIATUR';
+                if (dusunManual === 'MENONGO') dusun = 'MENONGO';
+                else if (dusunManual === 'NGELO') dusun = 'NGELO';
+                else if (dusunManual === 'KEDUWUL') dusun = 'KEDUWUL';
+
+                // Blok Logic
+                let rawNop = String(r['NOP']).trim();
+                let blok = "Lainnya";
+                if (rawNop.includes('.')) {
+                    let parts = rawNop.split('.');
+                    if (parts.length >= 5) blok = parts[4];
+                } else {
+                    let cleanNop = rawNop.replace(/\D/g, '');
+                    if (cleanNop.length >= 13) blok = cleanNop.substring(10, 13);
+                }
+
+                const tag = window.getNominalTagihan(r);
+                const isPaid = r.isPaid;
+                const wpName = r['NAMA WP'];
+
+                // Init Blok if not exist
+                if(!blokStats[blok]) blokStats[blok] = { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0, unpaidList: [] };
+
+                // Update Dusun Stats
+                dusunStats[dusun].totalNOP++;
+                dusunStats[dusun].totalRp += tag;
+                if(isPaid) {
+                    dusunStats[dusun].lunasNOP++;
+                    dusunStats[dusun].lunasRp += tag;
+                } else {
+                    dusunStats[dusun].unpaidList.push({ name: wpName, nop: rawNop, tag: tag });
+                }
+
+                // Update Blok Stats
+                blokStats[blok].totalNOP++;
+                blokStats[blok].totalRp += tag;
+                if(isPaid) {
+                    blokStats[blok].lunasNOP++;
+                    blokStats[blok].lunasRp += tag;
+                } else {
+                    blokStats[blok].unpaidList.push({ name: wpName, nop: rawNop, tag: tag });
+                }
+            });
+
+            // Render Dusun
+            let htmlDusun = '';
+            ['MENONGO', 'NGELO', 'KEDUWUL', 'BELUM DIATUR'].forEach(d => {
+                if (d === 'BELUM DIATUR' && dusunStats[d].totalNOP === 0) return; 
+                htmlDusun += generateProgressCardHtml(d, dusunStats[d], 'dusun');
+            });
+            document.getElementById('contentTabDusun').innerHTML = htmlDusun;
+
+            // Render Blok
+            let htmlBlok = '';
+            // Sort keys numerically if possible
+            const sortedBloks = Object.keys(blokStats).sort((a, b) => {
+                const numA = parseInt(a);
+                const numB = parseInt(b);
+                if(!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b);
+            });
+
+            sortedBloks.forEach(b => {
+                if (blokStats[b].totalNOP === 0) return;
+                htmlBlok += generateProgressCardHtml(`Blok ${b}`, blokStats[b], `blok_${b}`);
+            });
+            document.getElementById('contentTabBlok').innerHTML = htmlBlok;
+
+            window.switchProgressTab(window.activeProgressTab);
+            window.lucide.createIcons();
+            document.getElementById('progressModal').classList.remove('hidden');
+        };
+
+        function generateProgressCardHtml(title, data, idPrefix) {
+            const pctNOP = data.totalNOP > 0 ? Math.round((data.lunasNOP / data.totalNOP) * 100) : 0;
+            const pctRp = data.totalRp > 0 ? Math.round((data.lunasRp / data.totalRp) * 100) : 0;
+            const unpaidCount = data.unpaidList.length;
+            const isExpanded = window.expandedUnpaidLists.has(idPrefix);
+            
+            // Serialize list safely for onclick string
+            const safeListStr = encodeURIComponent(JSON.stringify(data.unpaidList));
+
+            let unpaidListHtml = '';
+            if (unpaidCount > 0) {
+                let rows = data.unpaidList.map(u => `
+                    <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-100 transition-colors">
+                        <td class="py-2 pr-2 font-bold text-slate-700 uppercase">${u.name}</td>
+                        <td class="py-2 px-2 font-mono text-slate-400">${u.nop}</td>
+                        <td class="py-2 pl-2 text-right font-black text-rose-600">${window.formatRupiah(u.tag)}</td>
+                    </tr>
+                `).join('');
+
+                unpaidListHtml = `
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                    <div class="flex justify-between items-center mb-2">
+                        <button onclick="toggleUnpaidList('${idPrefix}')" class="flex items-center gap-1 text-xs text-rose-600 font-bold hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg transition-colors border border-rose-100">
+                            <i data-lucide="${isExpanded ? 'chevron-up' : 'list'}" class="w-3 h-3"></i> 
+                            ${isExpanded ? 'Tutup Daftar' : `Lihat ${unpaidCount} NOP Belum Lunas`}
+                        </button>
+                        ${isExpanded ? `
+                        <div class="flex gap-2">
+                            <button onclick="copyUnpaidWA('${title}', '${safeListStr}')" class="flex items-center gap-1 text-[10px] text-white font-bold bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-lg transition-colors uppercase shadow-sm" title="Salin format teks WhatsApp">
+                                <i data-lucide="message-circle" class="w-3 h-3"></i> WA
+                            </button>
+                            <button onclick="copyUnpaidExcel('${title}', '${safeListStr}')" class="flex items-center gap-1 text-[10px] text-white font-bold bg-teal-600 hover:bg-teal-700 px-3 py-1.5 rounded-lg transition-colors uppercase shadow-sm" title="Salin baris dan kolom untuk di-paste ke Excel">
+                                <i data-lucide="table" class="w-3 h-3"></i> Excel
+                            </button>
+                        </div>` : ''}
+                    </div>
+                    
+                    <div id="list_${idPrefix}" class="${isExpanded ? 'block' : 'hidden'} mt-2 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-inner">
+                        <div class="max-h-48 overflow-y-auto custom-scroll p-3">
+                            <table class="w-full text-[10px] text-left">
+                                <thead class="text-slate-400 uppercase tracking-wider sticky top-0 bg-white shadow-[0_4px_4px_-4px_rgba(0,0,0,0.1)] pb-1">
+                                    <tr><th class="pb-2">Nama WP</th><th class="pb-2">NOP</th><th class="text-right pb-2">Tagihan</th></tr>
+                                </thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            return `
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 relative transition-all hover:border-indigo-300">
+                <h4 class="font-black text-lg text-slate-800 mb-4 uppercase tracking-tight flex justify-between items-center">
+                    ${title}
+                    <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full border border-slate-200">${data.totalNOP} SPPT</span>
+                </h4>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                        <p class="text-[9px] font-black text-emerald-600/70 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="coins" class="w-3 h-3"></i> Rp Terkumpul</p>
+                        <p class="text-sm font-black text-emerald-600 mt-1">${window.formatRupiah(data.lunasRp)}</p>
+                        <p class="text-[10px] text-slate-400 font-bold mb-2">Target: ${window.formatRupiah(data.totalRp)}</p>
+                        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                            <div class="bg-emerald-500 h-2 rounded-full transition-all duration-1000" style="width: ${pctRp}%"></div>
+                        </div>
+                        <p class="text-right text-[9px] font-black text-emerald-600 mt-1">${pctRp}%</p>
+                    </div>
+                    <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                        <p class="text-[9px] font-black text-blue-600/70 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="file-check-2" class="w-3 h-3"></i> NOP Selesai</p>
+                        <p class="text-sm font-black text-blue-600 mt-1">${data.lunasNOP} Lunas</p>
+                        <p class="text-[10px] text-slate-400 font-bold mb-2">Total: ${data.totalNOP} NOP</p>
+                        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                            <div class="bg-blue-500 h-2 rounded-full transition-all duration-1000" style="width: ${pctNOP}%"></div>
+                        </div>
+                        <p class="text-right text-[9px] font-black text-blue-600 mt-1">${pctNOP}%</p>
+                    </div>
+                </div>
+                ${unpaidListHtml}
+            </div>
+            `;
+        }
+
+        window.switchProgressTab = (tab) => {
+            window.activeProgressTab = tab;
+            const btnD = document.getElementById('btnTabDusun');
+            const btnB = document.getElementById('btnTabBlok');
+            const contentD = document.getElementById('contentTabDusun');
+            const contentB = document.getElementById('contentTabBlok');
+
+            if(tab === 'dusun') {
+                btnD.className = "px-5 py-3 bg-white text-indigo-700 font-black rounded-t-xl border-t border-l border-r border-slate-200 relative top-[1px] shadow-[0_-2px_5px_rgba(0,0,0,0.02)] uppercase text-xs flex items-center gap-2";
+                btnB.className = "px-5 py-3 text-slate-500 font-bold hover:bg-white rounded-t-xl hover:border-t hover:border-l hover:border-r hover:border-slate-200 uppercase text-xs flex items-center gap-2 transition-all border-transparent border-t border-l border-r";
+                contentD.classList.remove('hidden');
+                contentB.classList.add('hidden');
+            } else {
+                btnB.className = "px-5 py-3 bg-white text-blue-700 font-black rounded-t-xl border-t border-l border-r border-slate-200 relative top-[1px] shadow-[0_-2px_5px_rgba(0,0,0,0.02)] uppercase text-xs flex items-center gap-2";
+                btnD.className = "px-5 py-3 text-slate-500 font-bold hover:bg-white rounded-t-xl hover:border-t hover:border-l hover:border-r hover:border-slate-200 uppercase text-xs flex items-center gap-2 transition-all border-transparent border-t border-l border-r";
+                contentB.classList.remove('hidden');
+                contentD.classList.add('hidden');
+            }
+        };
+
+        window.toggleUnpaidList = (idPrefix) => {
+            if (window.expandedUnpaidLists.has(idPrefix)) {
+                window.expandedUnpaidLists.delete(idPrefix);
+            } else {
+                window.expandedUnpaidLists.add(idPrefix);
+            }
+            window.openProgressModal(); // Re-render to update icon and visibility
+        };
+
+        window.copyUnpaidWA = (title, dataJson) => {
+            try {
+                const data = JSON.parse(decodeURIComponent(dataJson));
+                let text = `*DAFTAR PENUNGGAK PBB*\nWilayah: *${title}*\nTahun Pajak: *${window.currentYear}*\n--------------------------\n`;
+                let total = 0;
+                
+                data.forEach((r, i) => {
+                    total += r.tag;
+                    text += `${i+1}. *${r.name}*\n   NOP: \`${r.nop}\`\n   Tagihan: Rp ${window.formatRupiah(r.tag)}\n\n`;
+                });
+                
+                text += `--------------------------\n*Total Tunggakan: ${window.formatRupiah(total)}*\n*Jumlah NOP: ${data.length}*\n--------------------------\n_Segera Lakukan Pembayaran_`;
+                window.copyText(text, "Daftar Tunggakan Disalin ke WA!");
+            } catch (e) {
+                console.error("Gagal parse data untuk WA", e);
+                window.showToast("Gagal menyalin data.");
+            }
+        };
+
+        window.copyUnpaidExcel = (title, dataJson) => {
+            try {
+                const data = JSON.parse(decodeURIComponent(dataJson));
+                let text = `NO\tNAMA WP\tNOP\tTAGIHAN\tKETERANGAN\tWILAYAH\n`;
+                
+                data.forEach((r, i) => {
+                    text += `${i+1}\t${r.name}\t${r.nop}\t${r.tag}\tBELUM TERBAYAR\t${title}\n`;
+                });
+                
+                window.copyText(text, `Data Tunggakan ${title} Disalin ke Clipboard! (Siap Paste di Excel)`);
+            } catch (e) {
+                console.error("Gagal parse data untuk Excel", e);
+                window.showToast("Gagal menyalin data Excel.");
+            }
+        };
+
+        window.closeProgressModal = () => document.getElementById('progressModal').classList.add('hidden');
+
         window.openSelectedListModal = () => {
             if (window.selectedNops.size === 0) return;
-            
             const tbody = document.getElementById('selectedListTableBody');
             let totalAmount = 0;
             let html = '';
@@ -1013,22 +1272,16 @@
             document.getElementById('selectedListCount').innerText = `${window.selectedNops.size} NOP Terpilih`;
             document.getElementById('selectedListTotalAmount').innerText = window.formatRupiah(totalAmount);
             tbody.innerHTML = html;
-            
             window.lucide.createIcons();
             document.getElementById('selectedListModal').classList.remove('hidden');
         };
 
-        window.closeSelectedListModal = () => {
-            document.getElementById('selectedListModal').classList.add('hidden');
-        };
+        window.closeSelectedListModal = () => document.getElementById('selectedListModal').classList.add('hidden');
 
         window.unselectNopFromList = (nop) => {
             window.toggleSelectNOP(nop); 
-            if (window.selectedNops.size === 0) {
-                window.closeSelectedListModal();
-            } else {
-                window.openSelectedListModal(); 
-            }
+            if (window.selectedNops.size === 0) window.closeSelectedListModal();
+            else window.openSelectedListModal(); 
         };
 
         window.openReportModal = () => {
@@ -1043,20 +1296,12 @@
             });
 
             const datesArray = Array.from(uniqueDates).reverse();
-            
-            if (datesArray.length === 0) {
-                alert("Belum ada data pembayaran yang tersimpan.");
-                return;
-            }
+            if (datesArray.length === 0) return alert("Belum ada data pembayaran yang tersimpan.");
 
             dateSelect.innerHTML = datesArray.map(d => `<option value="${d}">${d}</option>`).join('');
-            
             const todayStr = new Date().toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric'}).split(' ')[0].split(',')[0];
-            if (datesArray.includes(todayStr)) {
-                dateSelect.value = todayStr;
-            } else {
-                dateSelect.selectedIndex = 0;
-            }
+            if (datesArray.includes(todayStr)) dateSelect.value = todayStr;
+            else dateSelect.selectedIndex = 0;
 
             window.generateReport();
             document.getElementById('reportModal').classList.remove('hidden');
@@ -1107,166 +1352,54 @@
                 text += `${i+1}. ${r['NAMA WP']} - ${window.formatRupiah(tag)}\n`;
             });
             
-            text += `--------------------------\n*TOTAL SETORAN: ${window.formatRupiah(total)}*\n*JUMLAH: ${window.reportCurrentData.length} NOP*\n--------------------------\n_Dicetak dari Aplikasi PBB Desa Menongo_`;
+            text += `--------------------------\n*TOTAL SETORAN: ${window.formatRupiah(total)}*\n*JUMLAH: ${window.reportCurrentData.length} NOP*\n--------------------------\n_Dicetak dari Aplikasi PBB_`;
             window.copyText(text, "Laporan Setoran Disalin!");
         };
 
         window.downloadReportExcel = () => {
             if(window.reportCurrentData.length === 0) return alert("Tidak ada data setoran untuk diunduh.");
-            
             const selectedDate = document.getElementById('reportDateSelect').value;
-            
-            // Format 9 Kolom + Keterangan + Tanggal Bayar
             const exportData = window.reportCurrentData.map((r, i) => ({
-                'NO': r['NO'] || (i + 1),
-                'NOP': r['NOP'],
-                'TAHUN': r['TAHUN'] || '',
-                'TAGIHAN': r['TAGIHAN'] || '',
-                'DENDA': r['DENDA'] || '',
-                'TOTAL': window.getNominalTagihan(r),
-                'NAMA WP': r['NAMA WP'],
-                'LETAK OP': r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '',
-                'KETERANGAN': r.isPaid ? 'LUNAS' : 'BELUM TERBAYAR',
-                'TANGGAL BAYAR': r.paidDate || ''
+                'NO': r['NO'] || (i + 1), 'NOP': r['NOP'], 'TAHUN': r['TAHUN'] || '', 'TAGIHAN': r['TAGIHAN'] || '', 'DENDA': r['DENDA'] || '',
+                'TOTAL': window.getNominalTagihan(r), 'NAMA WP': r['NAMA WP'], 'LETAK OP': r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '',
+                'KETERANGAN': r.isPaid ? 'LUNAS' : 'BELUM TERBAYAR', 'TANGGAL BAYAR': r.paidDate || ''
             }));
             
             const totalBayar = window.reportCurrentData.reduce((acc, curr) => acc + window.getNominalTagihan(curr), 0);
+            exportData.push({'NO': '','NOP': '','TAHUN': '','TAGIHAN': '','DENDA': '','TOTAL': totalBayar,'NAMA WP': 'TOTAL SETORAN HARI INI','LETAK OP': '','KETERANGAN': '','TANGGAL BAYAR': ''});
             
-            exportData.push({
-                'NO': '',
-                'NOP': '',
-                'TAHUN': '',
-                'TAGIHAN': '',
-                'DENDA': '',
-                'TOTAL': totalBayar,
-                'NAMA WP': 'TOTAL SETORAN HARI INI',
-                'LETAK OP': '',
-                'KETERANGAN': '',
-                'TANGGAL BAYAR': ''
-            });
-
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
-            
             const safeDateStr = selectedDate.replace(/\//g, '-'); 
             XLSX.utils.book_append_sheet(wb, ws, `Setoran_${safeDateStr}`);
-            
-            const fileName = `Rekap_Setoran_PBB_Menongo_${safeDateStr}`;
-            XLSX.writeFile(wb, `${fileName}.xlsx`);
+            XLSX.writeFile(wb, `Rekap_Setoran_PBB_Menongo_${safeDateStr}.xlsx`);
         };
 
-        // FITUR PROGRES DUSUN (Membaca data manual terlebih dahulu)
-        window.openDusunModal = () => {
-            document.getElementById('dusunYearLabel').innerText = window.currentYear;
-            const container = document.getElementById('dusunStatsContainer');
-
-            const stats = {
-                'MENONGO': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
-                'NGELO': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
-                'KEDUWUL': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 },
-                'BELUM DIATUR': { totalNOP: 0, lunasNOP: 0, totalRp: 0, lunasRp: 0 }
-            };
-
-            window.globalData.forEach(r => {
-                // Cek dusun manual terlebih dahulu, jika kosong baru baca LETAK OP excel
-                const dusunManual = r.manualDusunName ? String(r.manualDusunName).toUpperCase() : '';
-                let dusun = 'BELUM DIATUR';
-                
-                if (dusunManual === 'MENONGO') dusun = 'MENONGO';
-                else if (dusunManual === 'NGELO') dusun = 'NGELO';
-                else if (dusunManual === 'KEDUWUL') dusun = 'KEDUWUL';
-
-                const tag = window.getNominalTagihan(r);
-
-                stats[dusun].totalNOP++;
-                stats[dusun].totalRp += tag;
-                if (r.isPaid) {
-                    stats[dusun].lunasNOP++;
-                    stats[dusun].lunasRp += tag;
-                }
-            });
-
-            let html = '<div class="grid gap-4">';
-            ['MENONGO', 'NGELO', 'KEDUWUL', 'BELUM DIATUR'].forEach(d => {
-                const s = stats[d];
-                if (d === 'BELUM DIATUR' && s.totalNOP === 0) return; // Sembunyikan Lainnya jika kosong
-                
-                const pctNOP = s.totalNOP > 0 ? Math.round((s.lunasNOP / s.totalNOP) * 100) : 0;
-                const pctRp = s.totalRp > 0 ? Math.round((s.lunasRp / s.totalRp) * 100) : 0;
-                
-                html += `
-                <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 relative overflow-hidden transition-all hover:border-indigo-300">
-                    <h4 class="font-black text-lg text-slate-800 mb-3 uppercase tracking-tight flex justify-between items-center">
-                        DUSUN ${d} 
-                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full border border-slate-200">${s.totalNOP} Wajib Pajak</span>
-                    </h4>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
-                            <p class="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="coins" class="w-3 h-3"></i> Progres Uang (Rp)</p>
-                            <p class="text-base font-black text-emerald-600 mt-1">${window.formatRupiah(s.lunasRp)}</p>
-                            <p class="text-xs text-slate-400 font-bold mb-2">dari target ${window.formatRupiah(s.totalRp)}</p>
-                            <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1 overflow-hidden">
-                                <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-1000" style="width: ${pctRp}%"></div>
-                            </div>
-                            <p class="text-right text-[10px] font-black text-emerald-600 mt-1.5">${pctRp}% TERKUMPUL</p>
-                        </div>
-                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                            <p class="text-[10px] font-black text-blue-600/70 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="file-check-2" class="w-3 h-3"></i> Progres Berkas (NOP)</p>
-                            <p class="text-base font-black text-blue-600 mt-1">${s.lunasNOP} Lunas</p>
-                            <p class="text-xs text-slate-400 font-bold mb-2">dari total ${s.totalNOP} Tagihan</p>
-                            <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1 overflow-hidden">
-                                <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-1000" style="width: ${pctNOP}%"></div>
-                            </div>
-                            <p class="text-right text-[10px] font-black text-blue-600 mt-1.5">${pctNOP}% SELESAI</p>
-                        </div>
-                    </div>
-                </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-            window.lucide.createIcons();
-            document.getElementById('dusunModal').classList.remove('hidden');
-        };
-        window.closeDusunModal = () => document.getElementById('dusunModal').classList.add('hidden');
-
-        // FITUR BARU: Menetapkan Dusun Manual
         window.openSetDusunModal = () => document.getElementById('setDusunModal').classList.remove('hidden');
         window.closeSetDusunModal = () => document.getElementById('setDusunModal').classList.add('hidden');
         window.confirmSetDusun = (dusunName) => {
             window.selectedNops.forEach(nop => {
-                if (dusunName === "") {
-                    delete window.globalDusunMap[nop]; // Jika dihapus pengaturannya
-                } else {
-                    window.globalDusunMap[nop] = dusunName;
-                }
+                if (dusunName === "") delete window.globalDusunMap[nop];
+                else window.globalDusunMap[nop] = dusunName;
                 const r = window.globalData.find(x => String(x['NOP']).trim() === String(nop).trim());
                 if(r) r.manualDusunName = dusunName === "" ? null : dusunName;
             });
-            window.saveState();
-            window.closeSetDusunModal();
-            window.clearSelection();
+            window.saveState(); window.closeSetDusunModal(); window.clearSelection();
             if (dusunName) window.showToast(`${window.selectedNops.size} NOP dimasukkan ke Dusun ${dusunName}`);
             else window.showToast("Pengaturan Dusun dibersihkan");
         };
 
         window.handlePaymentClick = (target, isGroup, isCurrentlyPaid, amount) => {
             window.paymentIsSelected = false; 
-            
             if (isCurrentlyPaid) {
                 if (isGroup) window.togglePaidGroup(target, true);
                 else window.togglePaidRow(target);
             } else {
-                window.paymentTarget = target;
-                window.paymentIsGroup = isGroup;
-                window.paymentAmount = parseInt(amount) || 0;
-
+                window.paymentTarget = target; window.paymentIsGroup = isGroup; window.paymentAmount = parseInt(amount) || 0;
                 document.getElementById('paymentBillAmount').innerText = window.formatRupiah(window.paymentAmount);
                 document.getElementById('cashInput').value = '';
                 document.getElementById('paymentChangeAmount').innerText = 'Rp 0';
                 document.getElementById('changeContainer').className = "bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100 transition-all";
-                
                 document.getElementById('paymentModal').classList.remove('hidden');
                 setTimeout(() => document.getElementById('cashInput').focus(), 100); 
             }
@@ -1274,43 +1407,29 @@
         
         window.handleSelectedPaymentClick = () => {
             if (window.selectedNops.size === 0) return;
-
-            let totalUnpaid = 0;
-            let allPaid = true;
+            let totalUnpaid = 0, allPaid = true;
             
             window.globalData.forEach(r => {
                 if (window.selectedNops.has(String(r['NOP']).trim())) {
-                    if (!r.isPaid) {
-                        totalUnpaid += window.getNominalTagihan(r);
-                        allPaid = false;
-                    }
+                    if (!r.isPaid) { totalUnpaid += window.getNominalTagihan(r); allPaid = false; }
                 }
             });
 
             if (allPaid) {
                 if (confirm("Semua NOP yang Anda centang sudah berstatus LUNAS. Apakah Anda ingin membatalkan pelunasan mereka?")) {
                     window.globalData.forEach(r => {
-                        if (window.selectedNops.has(String(r['NOP']).trim())) {
-                            r.isPaid = false;
-                            r.paidDate = "";
-                        }
+                        if (window.selectedNops.has(String(r['NOP']).trim())) { r.isPaid = false; r.paidDate = ""; }
                     });
-                    window.clearSelection();
-                    window.saveState();
+                    window.clearSelection(); window.saveState();
                 }
                 return;
             }
 
-            window.paymentTarget = 'selected';
-            window.paymentIsGroup = false;
-            window.paymentIsSelected = true;
-            window.paymentAmount = totalUnpaid;
-
+            window.paymentTarget = 'selected'; window.paymentIsGroup = false; window.paymentIsSelected = true; window.paymentAmount = totalUnpaid;
             document.getElementById('paymentBillAmount').innerText = window.formatRupiah(window.paymentAmount);
             document.getElementById('cashInput').value = '';
             document.getElementById('paymentChangeAmount').innerText = 'Rp 0';
             document.getElementById('changeContainer').className = "bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100 transition-all";
-            
             document.getElementById('paymentModal').classList.remove('hidden');
             setTimeout(() => document.getElementById('cashInput').focus(), 100); 
         };
@@ -1324,54 +1443,35 @@
             const changeContainer = document.getElementById('changeContainer');
             
             if (cash === 0) {
-                changeEl.innerText = 'Rp 0';
-                changeEl.className = "text-3xl font-black text-slate-400";
-                changeContainer.className = "bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100 transition-all";
+                changeEl.innerText = 'Rp 0'; changeEl.className = "text-3xl font-black text-slate-400"; changeContainer.className = "bg-slate-50 rounded-2xl p-4 mb-8 border border-slate-100 transition-all";
             } else if (change < 0) {
-                changeEl.innerText = "Uang Kurang!";
-                changeEl.className = "text-2xl font-black text-rose-500 mt-1";
-                changeContainer.className = "bg-rose-50 rounded-2xl p-4 mb-8 border border-rose-200 transition-all";
+                changeEl.innerText = "Uang Kurang!"; changeEl.className = "text-2xl font-black text-rose-500 mt-1"; changeContainer.className = "bg-rose-50 rounded-2xl p-4 mb-8 border border-rose-200 transition-all";
             } else {
-                changeEl.innerText = window.formatRupiah(change);
-                changeEl.className = "text-3xl font-black text-emerald-500";
-                changeContainer.className = "bg-emerald-50 rounded-2xl p-4 mb-8 border border-emerald-200 transition-all";
+                changeEl.innerText = window.formatRupiah(change); changeEl.className = "text-3xl font-black text-emerald-500"; changeContainer.className = "bg-emerald-50 rounded-2xl p-4 mb-8 border border-emerald-200 transition-all";
             }
         };
 
         window.confirmPayment = () => {
             const cash = parseInt(document.getElementById('cashInput').value) || 0;
-            if (cash > 0 && cash < window.paymentAmount) {
-                if(!confirm("Uang yang dimasukkan kurang dari tagihan. Yakin ingin menandai LUNAS?")) return;
-            }
+            if (cash > 0 && cash < window.paymentAmount) { if(!confirm("Uang kurang dari tagihan. Yakin ingin menandai LUNAS?")) return; }
 
             if (window.paymentIsSelected) {
                 const now = new Date().toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
                 window.globalData.forEach(r => {
-                    if (window.selectedNops.has(String(r['NOP']).trim()) && !r.isPaid) {
-                        r.isPaid = true;
-                        r.paidDate = now;
-                    }
+                    if (window.selectedNops.has(String(r['NOP']).trim()) && !r.isPaid) { r.isPaid = true; r.paidDate = now; }
                 });
-                window.clearSelection(); 
-                window.saveState();
-            } else if (window.paymentIsGroup) {
-                window.togglePaidGroup(window.paymentTarget, false);
-            } else {
-                window.togglePaidRow(window.paymentTarget);
-            }
+                window.clearSelection(); window.saveState();
+            } else if (window.paymentIsGroup) { window.togglePaidGroup(window.paymentTarget, false);
+            } else { window.togglePaidRow(window.paymentTarget); }
             
-            window.paymentIsSelected = false; 
-            window.closePaymentModal();
-            window.showToast("Pembayaran Berhasil Dicatat");
+            window.paymentIsSelected = false; window.closePaymentModal(); window.showToast("Pembayaran Berhasil Dicatat");
         };
 
         window.togglePaidRow = (nop) => { 
             const r = window.globalData.find(x => String(x['NOP']).trim() === String(nop).trim()); 
             if(r) { 
-                r.isPaid = !r.isPaid; 
-                r.paidDate = r.isPaid ? new Date().toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) : "";
-                window.renderTable();
-                window.saveState(); 
+                r.isPaid = !r.isPaid; r.paidDate = r.isPaid ? new Date().toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) : "";
+                window.renderTable(); window.saveState(); 
             } 
         };
 
@@ -1379,28 +1479,18 @@
             const rows = window.globalData.filter(r => r.manualGroupName === nama);
             const now = new Date().toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
             rows.forEach(r => { r.isPaid = !isAllPaid; r.paidDate = r.isPaid ? now : ""; });
-            window.renderTable();
-            window.saveState(); 
+            window.renderTable(); window.saveState(); 
         };
 
         window.openGroupModal = () => { 
             document.getElementById('groupNameInput').value = ''; 
-            
             const previewContainer = document.getElementById('selectedNopsPreview');
-            let previewHtml = `<div class="font-bold text-slate-500 mb-2 text-[10px] uppercase flex justify-between items-center"><span>Data yang digabung:</span> <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">${window.selectedNops.size} NOP</span></div>`;
-            previewHtml += `<ul class="divide-y divide-slate-200">`;
+            let previewHtml = `<div class="font-bold text-slate-500 mb-2 text-[10px] uppercase flex justify-between items-center"><span>Data digabung:</span> <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">${window.selectedNops.size} NOP</span></div><ul class="divide-y divide-slate-200">`;
             window.globalData.forEach(r => {
-                if(window.selectedNops.has(String(r['NOP']).trim())) {
-                    previewHtml += `
-                        <li class="py-1.5 flex justify-between items-center">
-                            <span class="font-bold text-slate-700 text-[10px] uppercase truncate mr-2">${r['NAMA WP']}</span>
-                            <span class="text-slate-400 font-mono text-[9px] shrink-0">${r['NOP']}</span>
-                        </li>`;
-                }
+                if(window.selectedNops.has(String(r['NOP']).trim())) previewHtml += `<li class="py-1.5 flex justify-between items-center"><span class="font-bold text-slate-700 text-[10px] uppercase truncate mr-2">${r['NAMA WP']}</span><span class="text-slate-400 font-mono text-[9px] shrink-0">${r['NOP']}</span></li>`;
             });
             previewHtml += `</ul>`;
             previewContainer.innerHTML = previewHtml;
-
             document.getElementById('groupModal').classList.remove('hidden'); 
         };
         
@@ -1417,9 +1507,7 @@
         };
 
         window.openEditGroupModal = (oldName) => {
-            document.getElementById('editGroupNameInput').value = oldName;
-            document.getElementById('oldGroupNameHidden').value = oldName;
-            document.getElementById('editGroupModal').classList.remove('hidden');
+            document.getElementById('editGroupNameInput').value = oldName; document.getElementById('oldGroupNameHidden').value = oldName; document.getElementById('editGroupModal').classList.remove('hidden');
         };
         window.closeEditGroupModal = () => document.getElementById('editGroupModal').classList.add('hidden');
         window.confirmEditGroup = () => {
@@ -1444,32 +1532,21 @@
             const r = window.globalData.find(x => String(x['NOP']).trim() === String(nop).trim());
             if(!r) return;
             const ket = r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR";
-            const tag = window.getNominalTagihan(r);
-            const rowStr = `${r['NO']||''}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${tag}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
+            const rowStr = `${r['NO']||''}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${window.getNominalTagihan(r)}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
             await window.copyText(rowStr, `BARIS DISALIN KE EXCEL!`);
         };
 
         window.copyGroupExcelFull = async (groupName) => {
             const rows = window.globalData.filter(r => r.manualGroupName === groupName);
-            const headers = "NO\tNOP\tTAHUN\tTAGIHAN\tDENDA\tTOTAL\tNAMA WP\tLETAK OP\tKETERANGAN";
-            const content = rows.map((r, i) => {
-                const ket = r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR";
-                const tag = window.getNominalTagihan(r);
-                return `${r['NO']||(i+1)}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${tag}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
-            }).join('\n');
-            await window.copyText(`${headers}\n${content}`, `KELOMPOK ${groupName} DISALIN KE EXCEL (9 KOLOM)!`);
+            const content = rows.map((r, i) => `${r['NO']||(i+1)}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${window.getNominalTagihan(r)}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR"}`).join('\n');
+            await window.copyText(`NO\tNOP\tTAHUN\tTAGIHAN\tDENDA\tTOTAL\tNAMA WP\tLETAK OP\tKETERANGAN\n${content}`, `KELOMPOK DISALIN KE EXCEL!`);
         };
 
         window.copySelectedExcelFull = async () => {
             if(window.selectedNops.size === 0) return alert("PILIH NOP TERLEBIH DAHULU!");
             const rows = window.globalData.filter(r => window.selectedNops.has(String(r['NOP']).trim()));
-            const headers = "NO\tNOP\tTAHUN\tTAGIHAN\tDENDA\tTOTAL\tNAMA WP\tLETAK OP\tKETERANGAN";
-            const content = rows.map((r, i) => {
-                const ket = r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR";
-                const tag = window.getNominalTagihan(r);
-                return `${r['NO']||(i+1)}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${tag}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${ket}`;
-            }).join('\n');
-            await window.copyText(`${headers}\n${content}`, `DATA TERPILIH DISALIN KE FORMAT EXCEL!`);
+            const content = rows.map((r, i) => `${r['NO']||(i+1)}\t${r['NOP']}\t${r['TAHUN']||''}\t${r['TAGIHAN']||''}\t${r['DENDA']||''}\t${window.getNominalTagihan(r)}\t${r['NAMA WP']}\t${r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || ''}\t${r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR"}`).join('\n');
+            await window.copyText(`NO\tNOP\tTAHUN\tTAGIHAN\tDENDA\tTOTAL\tNAMA WP\tLETAK OP\tKETERANGAN\n${content}`, `DATA TERPILIH DISALIN KE FORMAT EXCEL!`);
         };
 
         window.copyNopContent = (nop) => window.copyText(nop, `NOP ${nop} DISALIN!`);
@@ -1499,48 +1576,26 @@
                 totalAll += tag;
                 if(r.isPaid) { totalLunas += tag; countLunas++; }
                 else { totalBelum += tag; countBelum++; }
-
-                const ket = r.isPaid ? 'LUNAS ✅' : 'BELUM TERBAYAR ❌';
-                text += `${i+1}. *${r['NAMA WP']}*\n   NOP: \`${r['NOP']}\`\n   Status: _${ket}_\n   Tagihan: *${window.formatRupiah(tag)}*\n\n`;
+                text += `${i+1}. *${r['NAMA WP']}*\n   NOP: \`${r['NOP']}\`\n   Status: _${r.isPaid ? 'LUNAS ✅' : 'BELUM TERBAYAR ❌'}_\n   Tagihan: *${window.formatRupiah(tag)}*\n\n`;
             });
 
-            let groupStatus = "BELUM TERBAYAR ❌";
-            let pesanPenutup = "_Mohon segera melakukan pembayaran tagihan Anda._";
-
-            if(countLunas > 0 && countBelum > 0) {
-                groupStatus = "TERBAYAR SEBAGIAN ⏳";
-                pesanPenutup = "_Terima kasih atas pembayaran sebagian Anda. Mohon segera melunasi sisa kekurangan tagihannya._";
-            } else if(countBelum === 0) {
-                groupStatus = "LUNAS SEMUA ✅";
-                pesanPenutup = "_Terima kasih! Seluruh tagihan PBB Anda telah LUNAS._";
-            }
-
-            text += `--------------------------\n*RINGKASAN TAGIHAN:*\nStatus: *${groupStatus}*\nLunas: ${countLunas} NOP (${window.formatRupiah(totalLunas)})\nBelum Terbayar: ${countBelum} NOP (${window.formatRupiah(totalBelum)})\n\n*TOTAL SELURUHNYA: ${window.formatRupiah(totalAll)}*\n--------------------------\n${pesanPenutup}\n\n*DADANG PURNOMO - SEKRETARIS DESA*`;
+            let groupStatus = countLunas > 0 && countBelum > 0 ? "TERBAYAR SEBAGIAN ⏳" : (countBelum === 0 ? "LUNAS SEMUA ✅" : "BELUM TERBAYAR ❌");
+            text += `--------------------------\n*RINGKASAN TAGIHAN:*\nStatus: *${groupStatus}*\nLunas: ${countLunas} NOP (${window.formatRupiah(totalLunas)})\nBelum Terbayar: ${countBelum} NOP (${window.formatRupiah(totalBelum)})\n\n*TOTAL SELURUHNYA: ${window.formatRupiah(totalAll)}*\n--------------------------\n_Dicetak dari Aplikasi PBB_`;
             window.copyText(text, "FORMAT WA BERHASIL DISALIN!");
         }
 
         window.downloadFilteredExcel = () => {
             if(window.filteredData.length === 0) return alert("TIDAK ADA DATA!");
             const exportData = window.filteredData.map((r, i) => ({
-                'NO': r['NO'] || (i+1),
-                'NOP': r['NOP'],
-                'TAHUN': r['TAHUN'] || '',
-                'TAGIHAN': r['TAGIHAN'] || '',
-                'DENDA': r['DENDA'] || '',
-                'TOTAL': window.getNominalTagihan(r),
-                'NAMA WP': r['NAMA WP'],
-                'LETAK OP': r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '',
-                'KETERANGAN': r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR",
-                'KELOMPOK WP': r.manualGroupName || '-',
-                'DUSUN MANUAL': r.manualDusunName || '-'
+                'NO': r['NO'] || (i+1), 'NOP': r['NOP'], 'TAHUN': r['TAHUN'] || '', 'TAGIHAN': r['TAGIHAN'] || '', 'DENDA': r['DENDA'] || '',
+                'TOTAL': window.getNominalTagihan(r), 'NAMA WP': r['NAMA WP'], 'LETAK OP': r['LETAK OP'] || r['LETAK OBJEK PAJAK'] || '',
+                'KETERANGAN': r.isPaid ? `LUNAS (${r.paidDate})` : "BELUM TERBAYAR", 'KELOMPOK WP': r.manualGroupName || '-', 'DUSUN MANUAL': r.manualDusunName || '-'
             }));
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `PBB_${window.currentYear}`);
-            let fileName = `PBB_MENONGO_${window.currentYear}_SEMUA`;
             const s = document.getElementById('statusSelect').value;
-            if(s === 'paid') fileName = `PBB_MENONGO_${window.currentYear}_LUNAS`;
-            if(s === 'unpaid') fileName = `PBB_MENONGO_${window.currentYear}_BELUM_TERBAYAR`;
+            let fileName = `PBB_MENONGO_${window.currentYear}_${s === 'paid' ? 'LUNAS' : (s === 'unpaid' ? 'BELUM_TERBAYAR' : 'SEMUA')}`;
             XLSX.writeFile(wb, `${fileName}.xlsx`);
         };
 
